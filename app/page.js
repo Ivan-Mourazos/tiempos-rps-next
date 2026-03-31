@@ -16,11 +16,12 @@ const dbConfig = {
 
 // Mapeo estático de tipos de Toldos Gómez a nombres amigables
 const TIPO_LABELS = {
-  'AS': 'ASISTENCIAS',
-  'VT': 'INSTALACIÓNS / VISITAS',
-  'TP': 'TALLER / PREPARACIÓNS',
-  'PM': 'COBROS / EXTRAS',
-  'OT': 'OUTROS'
+  'AS': 'Asistencia',
+  'PM': 'Cobros',
+  'TP': 'Trabajo previo',
+  'VT': 'Visitas',
+  'IN': 'Instalaciones',
+  'RC': 'Recados'
 };
 
 async function getMetadata() {
@@ -210,7 +211,6 @@ export default async function Page({ searchParams }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', borderTop: '1px dotted var(--border-color)', paddingTop: '0.4rem' }}>
                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', gap: '0.8rem' }}>
                       <span>📅 {item.fecha ? new Date(item.fecha).toLocaleDateString('gl-ES', { day: 'numeric', month: 'short' }) : ''}</span>
-                      <span> | 🆔 {item.codperso}</span>
                    </div>
                    
                    {googleMapsUrl && (
