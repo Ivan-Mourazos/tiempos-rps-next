@@ -33,8 +33,8 @@ async function getMetadata() {
       sql.query('SELECT DISTINCT prioridad FROM tgm_monitorizacion WHERE prioridad IS NOT NULL ORDER BY prioridad')
     ]);
     return {
-      tecnicos: tecnicos.recordset.map(r => ({ abbr: r.abreviatura, full: r.comercial })),
-      tipos: tipos.recordset.map(r => r.tipo),
+      tecnicos: tecnicos.recordset.map(r => ({ abbr: r.abreviatura ? r.abreviatura.trim() : '', full: r.comercial ? r.comercial.trim() : '' })),
+      tipos: tipos.recordset.map(r => r.tipo ? r.tipo.trim() : ''),
       prioridades: prioridades.recordset.map(r => r.prioridad)
     };
   } catch (error) {
@@ -76,7 +76,7 @@ async function getMonitorizacionData(filters = {}) {
       request.input('fechaInicio', sql.Date, fechaInicio);
     }
     if (fechaFin) {
-      query += ' AND fecha <= @fechaFin';
+      query += ' AND fecha < DATEADD(day, 1, @fechaFin)';
       request.input('fechaFin', sql.Date, fechaFin);
     }
 
@@ -133,9 +133,12 @@ export default async function Page({ searchParams }) {
           {dbData.map((item, index) => {
             const timeVal = formatTime(item.tiempo_total);
             const solutionVal = item.solucion || 'Pendente';
-            const tecnicoVal = item.comercial || item.abreviatura || 'N/A';
-            const avisoCompleto = `${item.aviso || ''}-${item.tipo || ''}`;
-            const tipoEntero = TIPO_LABELS[item.tipo] || item.tipo;
+            const dbTipo = item.tipo ? item.tipo.trim() : '';
+            const dbAbreviatura = item.abreviatura ? item.abreviatura.trim() : '';
+            const dbComercial = item.comercial ? item.comercial.trim() : '';
+            const tecnicoVal = dbComercial || dbAbreviatura || 'N/A';
+            const avisoCompleto = `${item.aviso ? item.aviso.trim() : ''}-${dbTipo}`;
+            const tipoEntero = TIPO_LABELS[dbTipo] || dbTipo;
             const priorityVal = item.prioridad;
             const obsVal = item.observaciones;
             
