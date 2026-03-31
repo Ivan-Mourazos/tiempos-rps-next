@@ -1,5 +1,6 @@
 import sql from 'mssql';
 import ThemeToggle from './components/ThemeToggle';
+import FilterForm from './components/FilterForm';
 
 const dbConfig = {
   user: process.env.DB_USER,
@@ -123,64 +124,7 @@ export default async function Page({ searchParams }) {
           <ThemeToggle />
         </div>
         
-        <form method="GET" action="/" style={{ 
-          display: 'flex', 
-          flexWrap: 'wrap', 
-          gap: '0.4rem', 
-          padding: '0.4rem',
-          background: 'rgba(255,255,255,0.02)',
-          borderRadius: '6px',
-          border: '1px solid var(--border-color)',
-          alignItems: 'flex-end'
-        }}>
-          <div style={{ flex: '1 1 140px' }}>
-            <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Técnico</label>
-            <select name="tecnico" defaultValue={filters.tecnico} style={{width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}}>
-              <option value="TODOS">TODOS</option>
-              {metadata.tecnicos.map(t => (
-                <option key={t.abbr} value={t.abbr}>{t.full || t.abbr}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ flex: '0 0 115px' }}>
-            <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Dende</label>
-            <input type="date" name="fechaInicio" defaultValue={filters.fechaInicio} style={{width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}} />
-          </div>
-          <div style={{ flex: '0 0 115px' }}>
-            <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Ata</label>
-            <input type="date" name="fechaFin" defaultValue={filters.fechaFin} style={{width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}} />
-          </div>
-          <div style={{ flex: '1 1 140px' }}>
-            <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Tipo</label>
-            <select name="tipo" defaultValue={filters.tipo} style={{width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}}>
-              <option value="TODOS">TODOS</option>
-              {metadata.tipos.map(t => (
-                <option key={t} value={t}>{TIPO_LABELS[t] || t}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ flex: '1 1 80px' }}>
-            <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Prioridade</label>
-            <select name="prioridad" defaultValue={filters.prioridad} style={{width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}}>
-              <option value="TODAS">TODAS</option>
-              {metadata.prioridades.map(p => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ flex: '2 1 180px' }}>
-            <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Cliente / Aviso</label>
-            <input type="text" name="cliente" defaultValue={filters.cliente} placeholder="Cli..." style={{width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}} />
-          </div>
-          <div style={{ flex: '1 1 100px' }}>
-            <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Teléfono</label>
-            <input type="text" name="telefono" defaultValue={filters.telefono} placeholder="Tlf..." style={{width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}} />
-          </div>
-          <div style={{ display: 'flex', gap: '0.2rem' }}>
-            <button type="submit" style={{ padding: '0.4rem 0.7rem', background: 'var(--brand-orange)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.65rem' }}>FILTER</button>
-            <a href="/" style={{ padding: '0.4rem 0.6rem', textDecoration: 'none', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', fontSize: '0.6rem', display: 'flex', alignItems: 'center' }}>RESET</a>
-          </div>
-        </form>
+        <FilterForm filters={filters} metadata={metadata} tipoLabels={TIPO_LABELS} />
       </header>
 
       <main className="main-content" style={{ padding: '1rem 1.5rem' }}>
