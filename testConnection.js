@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '.env.local' });
+require('dotenv').config({ path: '.env' });
 const sql = require('mssql');
 
 async function testConnection() {
@@ -8,23 +8,24 @@ async function testConnection() {
 
   const config = {
     user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    server: process.env.DB_HOST,
-    port: 1433,
+    password: process.env.DB_PASSWORD,
+    server: process.env.DB_SERVER,
     database: process.env.DB_NAME,
+    port: parseInt(process.env.DB_PORT || 1433),
     options: {
-      encrypt: false,
+      encrypt: true, // Probando true por si acaso
       trustServerCertificate: true,
       enableArithAbort: true,
-      connectTimeout: 15000,
+      connectTimeout: 30000,
       cryptoCredentialsDetails: {
-        minVersion: 'TLSv1' // Needed for older SQL Servers on Node 18+
+        minVersion: 'TLSv1.1' // SQL 2014 suele usar TLS 1.1 o 1.2
       }
     }
   };
 
   try {
-    console.log('Conectando a SQL Server...');
+    console.log('Conectando a SQL Server a través de la red local...');
+    console.log(`Parámetros: ${config.server}:${config.port} | Usuario: ${config.user} | DB: ${config.database}`);
     await sql.connect(config);
     console.log('¡Conexión Exitosa!');
     
@@ -34,6 +35,12 @@ async function testConnection() {
     
   } catch (err) {
     console.error('Error al conectar a SQL Server:', err);
+    if (err.originalError) {
+      console.error('Detalle técnico original:', err.originalError);
+    }
+    if (err.cause) {
+      console.error('Posible causa fundamental (network level):', err.cause);
+    }
   } finally {
     process.exit();
   }
