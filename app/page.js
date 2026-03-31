@@ -1,153 +1,279 @@
 import sql from 'mssql';
 import ThemeToggle from './components/ThemeToggle';
 
-// Datos falsos basados en tu captura para previsualización
-const MOCK_DATA = [
-  {
-    Aviso: 'I127378-VT',
-    Cliente: 'O PEQUENO MERCADO',
-    Localidad: 'A CORUÑA',
-    Telefonos: '647714970-',
-    Texto: 'FALDON LATERAL MEDIR FALDON LATERAL',
-    'T.Total': '00:28:00',
-    Solucion: 'SOLICITUD DE PRESUPUESTO'
-  },
-  {
-    Aviso: 'I127099-VT',
-    Cliente: 'HIJOS DE RIVERA, S.A.U.',
-    Localidad: 'VALDOVIÑO',
-    Telefonos: '981486486-',
-    Texto: 'CASA ROBLES CONCRETAR PT26000323.',
-    'T.Total': '01:21:00',
-    Solucion: 'PEDIDO'
-  },
-  {
-    Aviso: 'I127363-VT',
-    Cliente: 'CCI CARROCERIAS INTELIGENTES S.L.',
-    Localidad: 'VALGA',
-    Telefonos: '986556371 - 696823035',
-    Texto: 'TRABAJOS ESCENARIO PASAR A MEDIR ESCENARIO MODELO R500 EE, DE SIBEMOL...',
-    'T.Total': '02:24:00',
-    Solucion: 'PEDIDO'
+const dbConfig = {
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  server: process.env.DB_SERVER,
+  database: process.env.DB_NAME,
+  options: {
+    encrypt: false,
+    trustServerCertificate: true,
+    connectTimeout: 15000
   }
-];
+};
 
-async function getMonitorizacionData() {
+// Mapeo estático de tipos de Toldos Gómez a nombres amigables
+const TIPO_LABELS = {
+  'AS': 'ASISTENCIAS',
+  'VT': 'INSTALACIÓNS / VISITAS',
+  'TP': 'TALLER / PREPARACIÓNS',
+  'PM': 'COBROS / EXTRAS',
+  'OT': 'OUTROS'
+};
+
+async function getMetadata() {
   try {
-    const config = {
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      server: process.env.DB_SERVER,
-      database: process.env.DB_NAME,
-      options: {
-        encrypt: false,
-        trustServerCertificate: true,
-        connectTimeout: 5000
-      }
+    await sql.connect(dbConfig);
+    const [tecnicos, tipos, prioridades] = await Promise.all([
+      sql.query('SELECT DISTINCT abreviatura, comercial FROM tgm_monitorizacion WHERE abreviatura IS NOT NULL ORDER BY abreviatura'),
+      sql.query('SELECT DISTINCT tipo FROM tgm_monitorizacion WHERE tipo IS NOT NULL ORDER BY tipo'),
+      sql.query('SELECT DISTINCT prioridad FROM tgm_monitorizacion WHERE prioridad IS NOT NULL ORDER BY prioridad')
+    ]);
+    return {
+      tecnicos: tecnicos.recordset.map(r => ({ abbr: r.abreviatura, full: r.comercial })),
+      tipos: tipos.recordset.map(r => r.tipo),
+      prioridades: prioridades.recordset.map(r => r.prioridad)
     };
-    await sql.connect(config);
-    const result = await sql.query('SELECT * FROM tgm_monitorizacion'); // Extraídos todos los datos
-    return result.recordset;
   } catch (error) {
-    console.error("Error conectando a SQL Server (mostrando mockup): ", error.message);
-    return []; // Retorna vacío si falla la conexión
+    console.error("Error obteniendo metadatos: ", error.message);
+    return { tecnicos: [], tipos: [], prioridades: [] };
   }
 }
 
-export default async function Page() {
-  const dbData = await getMonitorizacionData();
-  
-  // Si no hay datos, mostramos los "MOCKS" para que veas el diseño
-  const data = dbData.length === 0 ? MOCK_DATA : dbData;
-  const isMock = dbData.length === 0;
+async function getMonitorizacionData(filters = {}) {
+  try {
+    const { tecnico, tipo, prioridad, cliente, telefono, fechaInicio, fechaFin } = filters;
+    await sql.connect(dbConfig);
+    
+    let query = 'SELECT * FROM tgm_monitorizacion WHERE 1=1';
+    const request = new sql.Request();
+
+    if (tecnico && tecnico !== 'TODOS') {
+      query += ' AND abreviatura = @tecnico';
+      request.input('tecnico', sql.VarChar, tecnico);
+    }
+    if (tipo && tipo !== 'TODOS') {
+      query += ' AND tipo = @tipo';
+      request.input('tipo', sql.VarChar, tipo);
+    }
+    if (prioridad && prioridad !== 'TODAS') {
+      query += ' AND prioridad = @prioridad';
+      request.input('prioridad', sql.Int, parseInt(prioridad));
+    }
+    if (cliente) {
+      query += ' AND (cliente LIKE @cliente OR aviso LIKE @cliente OR comercial LIKE @cliente)';
+      request.input('cliente', sql.VarChar, `%${cliente}%`);
+    }
+    if (telefono) {
+      query += ' AND (Telefono1 LIKE @telefono OR Telefono2 LIKE @telefono)';
+      request.input('telefono', sql.VarChar, `%${telefono}%`);
+    }
+    if (fechaInicio) {
+      query += ' AND fecha >= @fechaInicio';
+      request.input('fechaInicio', sql.Date, fechaInicio);
+    }
+    if (fechaFin) {
+      query += ' AND fecha <= @fechaFin';
+      request.input('fechaFin', sql.Date, fechaFin);
+    }
+
+    query += ' ORDER BY fecha DESC, prioridad DESC';
+    const result = await request.query(query);
+    return result.recordset;
+  } catch (error) {
+    console.error("Error conectando a SQL Server: ", error.message);
+    return [];
+  }
+}
+
+function formatTime(minutes) {
+  if (!minutes || minutes === 0) return '0h 00m';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}h ${String(m).padStart(2, '0')}m`;
+}
+
+export default async function Page({ searchParams }) {
+  const params = await searchParams;
+  const today = new Date().toISOString().split('T')[0];
+
+  const filters = {
+    tecnico: params.tecnico || 'TODOS',
+    tipo: params.tipo || 'TODOS',
+    prioridad: params.prioridad || 'TODAS',
+    cliente: params.cliente || '',
+    telefono: params.telefono || '',
+    fechaInicio: params.fechaInicio || today,
+    fechaFin: params.fechaFin || today
+  };
+
+  const [dbData, metadata] = await Promise.all([
+    getMonitorizacionData(filters),
+    getMetadata()
+  ]);
+
+  const hasData = dbData.length > 0;
 
   return (
     <div className="dashboard-container">
-      <header className="header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1>Monitorización en tempo real RPS Next</h1>
-            {isMock && <span style={{ fontSize: '0.8rem', color: '#ef4444' }}>⚠️ Modo Previsualización (Sen conexión á BBDD)</span>}
-          </div>
+      <header className="header" style={{ padding: '0.8rem 1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+          <h1 style={{ fontSize: '1.25rem' }}>Monitorización Tiempos RPS Next</h1>
           <ThemeToggle />
         </div>
         
-        {/* Filtros */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '1.5rem' }}>
-          <div>
-            <label style={{display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', fontWeight: '500'}}>Técnico</label>
-            <select style={{padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none'}}>
-              <option>TODOS</option>
+        <form method="GET" action="/" style={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: '0.4rem', 
+          padding: '0.4rem',
+          background: 'rgba(255,255,255,0.02)',
+          borderRadius: '6px',
+          border: '1px solid var(--border-color)',
+          alignItems: 'flex-end'
+        }}>
+          <div style={{ flex: '1 1 140px' }}>
+            <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Técnico</label>
+            <select name="tecnico" defaultValue={filters.tecnico} style={{width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}}>
+              <option value="TODOS">TODOS</option>
+              {metadata.tecnicos.map(t => (
+                <option key={t.abbr} value={t.abbr}>{t.full || t.abbr}</option>
+              ))}
             </select>
           </div>
-          <div>
-            <label style={{display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', fontWeight: '500'}}>Data inicio</label>
-            <input type="date" style={{padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none'}} />
+          <div style={{ flex: '0 0 115px' }}>
+            <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Dende</label>
+            <input type="date" name="fechaInicio" defaultValue={filters.fechaInicio} style={{width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}} />
           </div>
-          <div>
-            <label style={{display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', fontWeight: '500'}}>Data fin</label>
-            <input type="date" style={{padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none'}} />
+          <div style={{ flex: '0 0 115px' }}>
+            <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Ata</label>
+            <input type="date" name="fechaFin" defaultValue={filters.fechaFin} style={{width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}} />
           </div>
-          <div>
-            <label style={{display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', fontWeight: '500'}}>Tipo</label>
-            <select style={{padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none'}}>
-              <option>TODOS</option>
+          <div style={{ flex: '1 1 140px' }}>
+            <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Tipo</label>
+            <select name="tipo" defaultValue={filters.tipo} style={{width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}}>
+              <option value="TODOS">TODOS</option>
+              {metadata.tipos.map(t => (
+                <option key={t} value={t}>{TIPO_LABELS[t] || t}</option>
+              ))}
             </select>
           </div>
-          <div>
-            <label style={{display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', fontWeight: '500'}}>Prioridade</label>
-            <select style={{padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none'}}>
-              <option>TODAS</option>
+          <div style={{ flex: '1 1 80px' }}>
+            <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Prioridade</label>
+            <select name="prioridad" defaultValue={filters.prioridad} style={{width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}}>
+              <option value="TODAS">TODAS</option>
+              {metadata.prioridades.map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
             </select>
           </div>
-          <div>
-            <label style={{display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', fontWeight: '500'}}>Cliente / Aviso</label>
-            <input type="text" placeholder="Buscar..." style={{padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', outline: 'none'}} />
+          <div style={{ flex: '2 1 180px' }}>
+            <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Cliente / Aviso</label>
+            <input type="text" name="cliente" defaultValue={filters.cliente} placeholder="Cli..." style={{width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}} />
           </div>
-        </div>
+          <div style={{ flex: '1 1 100px' }}>
+            <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Teléfono</label>
+            <input type="text" name="telefono" defaultValue={filters.telefono} placeholder="Tlf..." style={{width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}} />
+          </div>
+          <div style={{ display: 'flex', gap: '0.2rem' }}>
+            <button type="submit" style={{ padding: '0.4rem 0.7rem', background: 'var(--brand-orange)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.65rem' }}>FILTER</button>
+            <a href="/" style={{ padding: '0.4rem 0.6rem', textDecoration: 'none', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', fontSize: '0.6rem', display: 'flex', alignItems: 'center' }}>RESET</a>
+          </div>
+        </form>
       </header>
 
-      <main className="main-content">
-        <ul className="job-list">
-          {data.map((item, index) => {
-            const timeVal = item.TTotal || item['T.Total'] || '00:00:00';
-            const solutionVal = item.Solucion || 'Pendente';
+      <main className="main-content" style={{ padding: '1rem 1.5rem' }}>
+        <ul className="job-list" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', listStyle: 'none', padding: 0 }}>
+          {dbData.map((item, index) => {
+            const timeVal = formatTime(item.tiempo_total);
+            const solutionVal = item.solucion || 'Pendente';
+            const tecnicoVal = item.comercial || item.abreviatura || 'N/A';
+            const avisoCompleto = `${item.aviso || ''}-${item.tipo || ''}`;
+            const tipoEntero = TIPO_LABELS[item.tipo] || item.tipo;
+            const priorityVal = item.prioridad;
+            const obsVal = item.observaciones;
             
-            // Colores por solución
-            let badgeBg = 'var(--brand-orange-hover)';
-            if (solutionVal.includes('PEDIDO')) badgeBg = '#10b981'; // Green
-            if (solutionVal.includes('PRESUPUESTO')) badgeBg = '#3b82f6'; // Blue
+            let statusColor = 'var(--brand-orange)';
+            if (solutionVal.toUpperCase().includes('PEDIDO')) statusColor = '#10b981';
+            if (solutionVal.toUpperCase().includes('ORZAMENTO') || solutionVal.toUpperCase().includes('PRESUPUESTO')) statusColor = '#3b82f6';
+
+            const googleMapsUrl = item.gps && item.gps !== '0.0,0.0' ? `https://www.google.com/maps/search/?api=1&query=${item.gps}` : null;
+            const photos = [item.foto1, item.foto2, item.foto3, item.foto4].filter(f => f && f !== '');
 
             return (
-              <li key={index} className="job-card" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', fontWeight: '600', color: 'var(--brand-orange)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  Aviso: {item.Aviso || 'N/A'}
-                  <span style={{ padding: '0.25rem 0.75rem', background: badgeBg, color: '#fff', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 'bold', textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}>
-                    {solutionVal}
-                  </span>
+              <li key={index} className="job-card" style={{ 
+                display: 'flex', flexDirection: 'column', gap: '0.8rem', padding: '1.2rem',
+                border: priorityVal === 1 ? '2px solid var(--brand-orange)' : '1px solid var(--border-color)',
+                position: 'relative'
+              }}>
+                {priorityVal === 1 && <span style={{ position: 'absolute', top: '-11px', right: '12px', background: 'var(--brand-orange)', color: 'white', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '3px', fontWeight: '900', letterSpacing: '0.05em' }}>ALTA PRIORIDADE</span>}
+                
+                {/* Header Line */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                     <span style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--brand-orange)' }}>{avisoCompleto}</span>
+                     <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: '600' }}>{tecnicoVal}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                     <span style={{ fontSize: '0.8rem', fontWeight: '900', color: '#10b981' }}>⏱️ {timeVal}</span>
+                     <span style={{ fontSize: '0.65rem', fontWeight: 'bold', color: statusColor, textTransform: 'uppercase' }}>{solutionVal}</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', padding: '0.2rem 0', gap: '0.6rem', borderBottom: '1px dotted var(--border-color)' }}>
+                   <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Tipo: {tipoEntero}</span>
                 </div>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.9rem' }}>
-                  <div><strong style={{color: 'var(--text-secondary)'}}>Cliente:</strong> {item.Cliente || 'N/A'}</div>
-                  <div><strong style={{color: 'var(--text-secondary)'}}>Localidade:</strong> {item.Localidad || 'N/A'}</div>
-                  <div style={{gridColumn: '1 / -1'}}><strong style={{color: 'var(--text-secondary)'}}>Teléfonos:</strong> {item.Telefonos || 'N/A'}</div>
+                {/* Body Content */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: '1rem', fontSize: '0.85rem' }}>
+                    <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                       <strong style={{color: 'var(--text-secondary)', fontSize: '0.6rem', textTransform: 'uppercase'}}>Cliente:</strong> {item.cliente || 'N/A'}
+                    </div>
+                    <div><strong style={{color: 'var(--text-secondary)', fontSize: '0.6rem', textTransform: 'uppercase'}}>Localidade:</strong> {item.localidad || 'N/A'}</div>
+                    <div style={{ fontSize: '0.8rem' }}><strong style={{color: 'var(--text-secondary)', fontSize: '0.6rem', textTransform: 'uppercase'}}>Telfs:</strong> {item.Telefono1 || ''} {item.Telefono2 ? `/ ${item.Telefono2}` : ''}</div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: photos.length > 0 ? '1.2fr 0.8fr' : '1fr', gap: '1rem' }}>
+                    <div style={{ padding: '0.8rem', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.85rem', color: 'var(--text-primary)', lineHeight: '1.6' }}>
+                      <strong style={{display: 'block', fontSize: '0.6rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.4rem'}}>Descrición Técnica</strong>
+                      {item.texto || 'Sen descrición.'}
+                    </div>
+
+                    {photos.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignContent: 'flex-start' }}>
+                        {photos.map((p, i) => (
+                          <img 
+                            key={i} 
+                            src={`/api/images?path=${encodeURIComponent(p)}`} 
+                            alt={`Obra ${i+1}`}
+                            style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border-color)', background: '#eee' }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {obsVal && (
+                    <div style={{ padding: '0.5rem 0.8rem', borderLeft: '3px solid #3b82f6', background: 'rgba(59, 130, 246, 0.05)', fontSize: '0.8rem', color: 'var(--text-primary)', fontStyle: 'italic' }}>
+                      <strong style={{fontSize: '0.6rem', textTransform: 'uppercase', color: '#3b82f6', marginBottom: '0.15rem', display: 'inline-block'}}>Observacións:</strong> {obsVal}
+                    </div>
+                  )}
                 </div>
 
-                <div style={{ padding: '1rem', background: 'var(--bg-color)', borderRadius: '6px', fontSize: '0.875rem', flexGrow: 1, border: '1px solid var(--border-color)' }}>
-                  {item.Texto || 'Sen descrición...'}
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '0.8rem' }}>
-                   <span style={{ fontSize: '0.875rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                     ⏱️ Tempo: {timeVal}
-                   </span>
-                   <button style={{ 
-                     background: 'transparent', border: '1px solid var(--border-color)', padding: '0.5rem 1rem', 
-                     borderRadius: '6px', cursor: 'pointer', color: 'var(--text-primary)',
-                     display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.875rem', fontWeight: '500' 
-                   }}>
-                     📍 Ver no Mapa
-                   </button>
+                {/* Footer Section */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', borderTop: '1px dotted var(--border-color)', paddingTop: '0.4rem' }}>
+                   <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', gap: '0.8rem' }}>
+                      <span>📅 {item.fecha ? new Date(item.fecha).toLocaleDateString('gl-ES', { day: 'numeric', month: 'short' }) : ''}</span>
+                      <span> | 🆔 {item.codperso}</span>
+                   </div>
+                   
+                   {googleMapsUrl && (
+                     <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'var(--brand-orange)', fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                       📍 GOOGLE MAPS
+                     </a>
+                   )}
                 </div>
               </li>
             );
