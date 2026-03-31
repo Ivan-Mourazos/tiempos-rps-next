@@ -13,7 +13,7 @@ async function testConnection() {
     database: process.env.DB_NAME,
     port: parseInt(process.env.DB_PORT || 1433),
     options: {
-      encrypt: true, // Probando true por si acaso
+      encrypt: false, // Probando false para red local (SQL 2014)
       trustServerCertificate: true,
       enableArithAbort: true,
       connectTimeout: 30000,
