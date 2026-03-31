@@ -32,9 +32,24 @@ async function getMetadata() {
       sql.query('SELECT DISTINCT tipo FROM tgm_monitorizacion WHERE tipo IS NOT NULL ORDER BY tipo'),
       sql.query('SELECT DISTINCT prioridad FROM tgm_monitorizacion WHERE prioridad IS NOT NULL ORDER BY prioridad')
     ]);
+    const baseTecnicos = tecnicos.recordset.map(r => ({ abbr: r.abreviatura ? r.abreviatura.trim() : '', full: r.comercial ? r.comercial.trim() : '' }));
+    const knownMissing = [
+      { abbr: 'Miguel Tato', full: 'Miguel Tato' },
+      { abbr: 'Ivan Seoane', full: 'Ivan Seoane' }
+    ];
+    
+    const allTecnicos = [...baseTecnicos];
+    knownMissing.forEach(km => {
+      if (!allTecnicos.some(t => t.full.toLowerCase().includes(km.full.toLowerCase()))) {
+        allTecnicos.push(km);
+      }
+    });
+
+    allTecnicos.sort((a, b) => a.full.localeCompare(b.full));
+
     return {
-      tecnicos: tecnicos.recordset.map(r => ({ abbr: r.abreviatura ? r.abreviatura.trim() : '', full: r.comercial ? r.comercial.trim() : '' })),
-      tipos: tipos.recordset.map(r => r.tipo ? r.tipo.trim() : ''),
+      tecnicos: allTecnicos,
+      tipos: ['IN', 'PM', 'VT', 'TP', 'AS', 'RC'],
       prioridades: prioridades.recordset.map(r => r.prioridad)
     };
   } catch (error) {
@@ -52,7 +67,7 @@ async function getMonitorizacionData(filters = {}) {
     const request = new sql.Request();
 
     if (tecnico && tecnico !== 'TODOS') {
-      query += ' AND abreviatura = @tecnico';
+      query += ' AND (abreviatura = @tecnico OR comercial = @tecnico)';
       request.input('tecnico', sql.VarChar, tecnico);
     }
     if (tipo && tipo !== 'TODOS') {

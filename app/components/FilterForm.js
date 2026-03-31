@@ -53,13 +53,13 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
           ))}
         </select>
       </div>
-      <div style={{ flex: '0 0 115px' }}>
-        <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Dende</label>
-        <input type="date" name="fechaInicio" defaultValue={filters.fechaInicio} style={{width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}} />
+      <div style={{ flex: '0 0 120px' }}>
+        <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>📅 Dende</label>
+        <input type="date" name="fechaInicio" defaultValue={filters.fechaInicio} style={{width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem', cursor: 'pointer'}} />
       </div>
-      <div style={{ flex: '0 0 115px' }}>
-        <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Ata</label>
-        <input type="date" name="fechaFin" defaultValue={filters.fechaFin} style={{width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}} />
+      <div style={{ flex: '0 0 120px' }}>
+        <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>📅 Ata</label>
+        <input type="date" name="fechaFin" defaultValue={filters.fechaFin} style={{width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem', cursor: 'pointer'}} />
       </div>
       <div style={{ flex: '1 1 140px' }}>
         <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Tipo</label>
