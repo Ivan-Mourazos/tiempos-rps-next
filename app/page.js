@@ -82,8 +82,20 @@ async function getMonitorizacionData(filters = {}) {
       request.input('prioridad', sql.Int, parseInt(prioridad));
     }
     if (cliente) {
-      query += ' AND (cliente LIKE @cliente OR aviso LIKE @cliente OR comercial LIKE @cliente)';
-      request.input('cliente', sql.VarChar, `%${cliente}%`);
+      // Dividir por espacios para buscar independientemente del orden de nombre/apellido
+      const palabras = cliente.trim().split(/\s+/).filter(Boolean);
+      if (palabras.length === 1) {
+        query += ' AND (cliente LIKE @cliente0 OR aviso LIKE @cliente0 OR comercial LIKE @cliente0)';
+        request.input('cliente0', sql.VarChar, `%${palabras[0]}%`);
+      } else {
+        // Cada palabra debe aparecer en el campo cliente (AND), sin importar el orden
+        const condiciones = palabras.map((p, i) => {
+          request.input(`cliente${i}`, sql.VarChar, `%${p}%`);
+          return `(cliente LIKE @cliente${i})`;
+        });
+        query += ` AND (${condiciones.join(' AND ')} OR aviso LIKE @clienteFull OR comercial LIKE @clienteFull)`;
+        request.input('clienteFull', sql.VarChar, `%${cliente}%`);
+      }
     }
     if (telefono) {
       query += ' AND (Telefono1 LIKE @telefono OR Telefono2 LIKE @telefono)';
