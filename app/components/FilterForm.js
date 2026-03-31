@@ -55,11 +55,35 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
       </div>
       <div style={{ flex: '0 0 120px' }}>
         <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>📅 Dende</label>
-        <input type="date" name="fechaInicio" defaultValue={filters.fechaInicio} style={{width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem', cursor: 'pointer'}} />
+        <div style={{ position: 'relative' }}>
+          <input
+            type="date"
+            name="fechaInicio"
+            defaultValue={filters.fechaInicio}
+            id="fechaInicio"
+            style={{width: '100%', padding: '0.3rem', paddingRight: '1.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem', cursor: 'pointer'}}
+          />
+          <span
+            onClick={() => document.getElementById('fechaInicio').showPicker()}
+            style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', fontSize: '0.9rem', pointerEvents: 'all', userSelect: 'none' }}
+          >📅</span>
+        </div>
       </div>
       <div style={{ flex: '0 0 120px' }}>
         <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>📅 Ata</label>
-        <input type="date" name="fechaFin" defaultValue={filters.fechaFin} style={{width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem', cursor: 'pointer'}} />
+        <div style={{ position: 'relative' }}>
+          <input
+            type="date"
+            name="fechaFin"
+            defaultValue={filters.fechaFin}
+            id="fechaFin"
+            style={{width: '100%', padding: '0.3rem', paddingRight: '1.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem', cursor: 'pointer'}}
+          />
+          <span
+            onClick={() => document.getElementById('fechaFin').showPicker()}
+            style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', fontSize: '0.9rem', pointerEvents: 'all', userSelect: 'none' }}
+          >📅</span>
+        </div>
       </div>
       <div style={{ flex: '1 1 140px' }}>
         <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Tipo</label>

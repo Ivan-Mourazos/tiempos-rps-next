@@ -14,15 +14,19 @@ const dbConfig = {
   }
 };
 
-// Mapeo estático de tipos de Toldos Gómez a nombres amigables
+// Mapeo de códigos de tipo a nombres amigables
+// PM = Instalaciones (confirmado por usuario)
 const TIPO_LABELS = {
-  'AS': 'Asistencia',
-  'PM': 'Cobros',
-  'TP': 'Trabajo previo',
+  'PM': 'Instalaciones',
+  'CB': 'Cobros',
   'VT': 'Visitas',
-  'IN': 'Instalaciones',
+  'TP': 'Trabajo previo',
+  'AS': 'Asistencia',
   'RC': 'Recados'
 };
+
+// Lista de tipos en el orden exacto requerido (código real de BD)
+const TIPOS_ORDEN = ['PM', 'CB', 'VT', 'TP', 'AS', 'RC'];
 
 async function getMetadata() {
   try {
@@ -49,7 +53,7 @@ async function getMetadata() {
 
     return {
       tecnicos: allTecnicos,
-      tipos: ['IN', 'PM', 'VT', 'TP', 'AS', 'RC'],
+      tipos: TIPOS_ORDEN,
       prioridades: prioridades.recordset.map(r => r.prioridad)
     };
   } catch (error) {
