@@ -10,26 +10,38 @@ export async function GET(request) {
     return new NextResponse('Missing path', { status: 400 });
   }
 
-  // Base de red confirmada
-  const networkBase = '\\\\192.168.0.128\\Sisgeko';
-  
-  let cleanPath = rawPath;
   if (rawPath.startsWith('http')) {
     try {
-      const url = new URL(rawPath);
-      cleanPath = url.pathname; 
-    } catch (e) {}
+      console.log(`[Proxy] Fetching HTTP: ${rawPath}`);
+      const response = await fetch(rawPath);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
+      
+      return new NextResponse(buffer, {
+        headers: {
+          'Content-Type': contentType,
+          'Cache-Control': 'public, max-age=3600',
+        },
+      });
+    } catch (e) {
+      console.error(`[Proxy Fetch Error] ${rawPath}:`, e.message);
+      return new NextResponse('Image fetch failed', { status: 404 });
+    }
   }
 
+  // Fallback a Base de red confirmada para rutas relativas
+  const networkBase = '\\\\192.168.0.128\\Sisgeko';
+  
   // Normalizamos el path para Windows
-  let safePath = cleanPath.replace(/\//g, '\\');
-  if (safePath.startsWith('\\')) {
-    safePath = safePath.substring(1);
-  }
+  let safePath = rawPath.replace(/\//g, '\\');
+  if (safePath.startsWith('\\')) safePath = safePath.substring(1);
 
   const fullPath = path.join(networkBase, safePath);
   
-  console.log(`[Proxy] Solicitando: ${rawPath} -> Final: ${fullPath}`);
+  console.log(`[Proxy] Solicitando red local: ${fullPath}`);
 
   try {
     const fileBuffer = await fs.readFile(fullPath);
