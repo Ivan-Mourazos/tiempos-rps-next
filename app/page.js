@@ -14,19 +14,18 @@ const dbConfig = {
   }
 };
 
-// Mapeo de códigos de tipo a nombres amigables
-// PM = Instalaciones (confirmado por usuario)
+// Mapeo códigos BD -> nombres amigables (confirmado por usuario)
 const TIPO_LABELS = {
   'PM': 'Instalaciones',
-  'CB': 'Cobros',
+  'GC': 'Cobros',
   'VT': 'Visitas',
   'TP': 'Trabajo previo',
-  'AS': 'Asistencia',
-  'RC': 'Recados'
+  'AS': 'Asistencias',
+  'IN': 'Recados'
 };
 
-// Lista de tipos en el orden exacto requerido (código real de BD)
-const TIPOS_ORDEN = ['PM', 'CB', 'VT', 'TP', 'AS', 'RC'];
+// Orden exacto del filtro
+const TIPOS_ORDEN = ['PM', 'GC', 'VT', 'TP', 'AS', 'IN'];
 
 async function getMetadata() {
   try {
