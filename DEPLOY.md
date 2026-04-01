@@ -1,7 +1,5 @@
 # Guía de Despliegue en Producción - Tiempos RPS Next
 
-Esta guía detalla los pasos necesarios para desplegar la aplicación en un servidor Windows local de forma profesional, asegurando alta disponibilidad y ejecución en segundo plano.
-
 ## 1. Requisitos Previos
 
 - **Node.js**: Versión 18 o superior instalada (incluye `npm`).
@@ -10,7 +8,7 @@ Esta guía detalla los pasos necesarios para desplegar la aplicación en un serv
 
 ## 2. Preparación del Entorno
 
-1. **Clonar o descargar el código** en una carpeta local (ej: `C:\\Apps\\Tiempos-RPS-Next`).
+1. **Clonar o descargar el código**.
 2. **Configurar Variables de Entorno**:
    - Crear un archivo `.env` en la raíz (basado en `.env.example`).
    - Asegurar que las credenciales de SQL Server son las de producción.
@@ -21,7 +19,7 @@ Esta guía detalla los pasos necesarios para desplegar la aplicación en un serv
 
 ## 3. Compilación de Producción (Optimización)
 
-A diferencia del modo desarrollo (`npm run dev`), en producción se debe compilar el proyecto para generar un código optimizado y de alto rendimiento:
+
 
 ```powershell
 npm run build
@@ -70,4 +68,4 @@ Para que la aplicación se inicie automáticamente tras un reinicio de Windows:
 - **Proxy Inverso (Opcional)**: Si se desea una URL más amigable (ej: `http://tiempos.tg.local`), IT puede configurar esto en IIS usando el módulo "Application Request Routing" (ARR) y "URL Rewrite", redirigiendo el puerto 80 al 4000.
 
 ---
-*Para incidencias o actualizaciones, consultar con el equipo de desarrollo.*
+
