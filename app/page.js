@@ -1,6 +1,7 @@
 import sql from 'mssql';
 import ThemeToggle from './components/ThemeToggle';
 import FilterForm from './components/FilterForm';
+import ExpandableImage from './components/ExpandableImage';
 
 const dbConfig = {
   user: process.env.DB_USER,
@@ -35,25 +36,18 @@ async function getMetadata() {
       sql.query('SELECT DISTINCT tipo FROM tgm_monitorizacion WHERE tipo IS NOT NULL ORDER BY tipo'),
       sql.query('SELECT DISTINCT prioridad FROM tgm_monitorizacion WHERE prioridad IS NOT NULL ORDER BY prioridad')
     ]);
-    const baseTecnicos = tecnicos.recordset.map(r => ({ abbr: r.abreviatura ? r.abreviatura.trim() : '', full: r.comercial ? r.comercial.trim() : '' }));
-    const knownMissing = [
-      { abbr: 'Miguel Tato', full: 'Miguel Tato' },
-      { abbr: 'Ivan Seoane', full: 'Ivan Seoane' }
-    ];
     
-    const allTecnicos = [...baseTecnicos];
-    knownMissing.forEach(km => {
-      if (!allTecnicos.some(t => t.full.toLowerCase().includes(km.full.toLowerCase()))) {
-        allTecnicos.push(km);
-      }
-    });
+    const allTecnicos = tecnicos.recordset.map(r => ({ 
+      abbr: r.abreviatura ? r.abreviatura.trim() : '', 
+      full: r.comercial ? r.comercial.trim() : '' 
+    }));
 
-    allTecnicos.sort((a, b) => a.full.localeCompare(b.full));
+    allTecnicos.sort((a, b) => (a.full || a.abbr).localeCompare(b.full || b.abbr));
 
     return {
       tecnicos: allTecnicos,
       tipos: TIPOS_ORDEN,
-      prioridades: prioridades.recordset.map(r => r.prioridad)
+      prioridades: prioridades.recordset.map(r => r.prioridad).sort((a, b) => a - b)
     };
   } catch (error) {
     console.error("Error obteniendo metadatos: ", error.message);
@@ -222,11 +216,10 @@ export default async function Page({ searchParams }) {
                     {photos.length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignContent: 'flex-start' }}>
                         {photos.map((p, i) => (
-                          <img 
+                          <ExpandableImage 
                             key={i} 
                             src={`/api/images?path=${encodeURIComponent(p)}`} 
                             alt={`Obra ${i+1}`}
-                            style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border-color)', background: '#eee' }}
                           />
                         ))}
                       </div>
@@ -242,8 +235,20 @@ export default async function Page({ searchParams }) {
 
                 {/* Footer Section */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', borderTop: '1px dotted var(--border-color)', paddingTop: '0.4rem' }}>
-                   <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', gap: '0.8rem' }}>
+                   <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
                       <span>📅 {item.fecha ? new Date(item.fecha).toLocaleDateString('gl-ES', { day: 'numeric', month: 'short' }) : ''}</span>
+                      {priorityVal && (
+                        <span style={{ 
+                          padding: '2px 6px', 
+                          borderRadius: '4px', 
+                          background: priorityVal === 1 ? 'rgba(243, 112, 33, 0.1)' : 'rgba(0,0,0,0.05)',
+                          color: priorityVal === 1 ? 'var(--brand-orange)' : 'inherit',
+                          fontWeight: '700',
+                          fontSize: '0.65rem'
+                        }}>
+                          PRIORIDADE: {priorityVal}
+                        </span>
+                      )}
                    </div>
                    
                    {googleMapsUrl && (

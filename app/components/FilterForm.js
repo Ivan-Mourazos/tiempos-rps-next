@@ -1,28 +1,31 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useTransition, useRef } from 'react';
+import { useTransition, useRef, useState } from 'react';
 
 export default function FilterForm({ filters, metadata, tipoLabels }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const timeoutRef = useRef(null);
+  const formRef = useRef(null);
+  const [formKey, setFormKey] = useState(Date.now());
 
   function handleFormChange(e) {
     const form = e.currentTarget;
 
-    // Usamos debounce solo en entradas de texto para no saturar la base de datos
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
     const isTextInput = e.target.type === 'text';
     const delay = isTextInput ? 400 : 0;
-
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     timeoutRef.current = setTimeout(() => {
       const formData = new FormData(form);
       const searchParams = new URLSearchParams();
       
       for (let [key, value] of formData.entries()) {
-        if (value) searchParams.set(key, value);
+        if (value && value !== 'TODOS' && value !== 'TODAS' && value !== '') {
+          searchParams.set(key, value);
+        }
       }
 
       startTransition(() => {
@@ -31,19 +34,43 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
     }, delay);
   }
 
+  function handleClear() {
+    if (formRef.current) formRef.current.reset();
+    setFormKey(Date.now());
+    router.push('/', { scroll: false });
+  }
+
+  const togglePicker = (id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      // Intentamos alternar el foco para que algunos navegadores cierren/abran
+      if (document.activeElement === el) {
+        el.blur();
+      } else {
+        el.showPicker();
+      }
+    }
+  };
+
   return (
-    <form onChange={handleFormChange} onSubmit={(e) => e.preventDefault()} style={{ 
-      display: 'flex', 
-      flexWrap: 'wrap', 
-      gap: '0.4rem', 
-      padding: '0.4rem',
-      background: 'rgba(255,255,255,0.02)',
-      borderRadius: '6px',
-      border: '1px solid var(--border-color)',
-      alignItems: 'flex-end',
-      opacity: isPending ? 0.6 : 1,
-      transition: 'opacity 0.2s'
-    }}>
+    <form 
+      key={formKey}
+      ref={formRef}
+      onChange={handleFormChange} 
+      onSubmit={(e) => e.preventDefault()} 
+      style={{ 
+        display: 'flex', 
+        flexWrap: 'wrap', 
+        gap: '0.4rem', 
+        padding: '0.4rem',
+        background: 'rgba(255,255,255,0.02)',
+        borderRadius: '6px',
+        border: '1px solid var(--border-color)',
+        alignItems: 'flex-end',
+        opacity: isPending ? 0.6 : 1,
+        transition: 'opacity 0.2s'
+      }}
+    >
       <div style={{ flex: '1 1 140px' }}>
         <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>Técnico</label>
         <select name="tecnico" defaultValue={filters.tecnico} style={{width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}}>
@@ -64,8 +91,8 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
             style={{width: '100%', padding: '0.3rem', paddingRight: '1.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem', cursor: 'pointer'}}
           />
           <span
-            onClick={() => document.getElementById('fechaInicio').showPicker()}
-            style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', fontSize: '0.9rem', pointerEvents: 'all', userSelect: 'none' }}
+            onClick={() => togglePicker('fechaInicio')}
+            style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', fontSize: '0.9rem', pointerEvents: 'all', userSelect: 'none', zIndex: 10 }}
           >📅</span>
         </div>
       </div>
@@ -80,8 +107,8 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
             style={{width: '100%', padding: '0.3rem', paddingRight: '1.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem', cursor: 'pointer'}}
           />
           <span
-            onClick={() => document.getElementById('fechaFin').showPicker()}
-            style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', fontSize: '0.9rem', pointerEvents: 'all', userSelect: 'none' }}
+            onClick={() => togglePicker('fechaFin')}
+            style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', fontSize: '0.9rem', pointerEvents: 'all', userSelect: 'none', zIndex: 10 }}
           >📅</span>
         </div>
       </div>
@@ -112,7 +139,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
         <input type="text" name="telefono" defaultValue={filters.telefono} placeholder="Tlf..." style={{width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}} />
       </div>
       <div style={{ display: 'flex', gap: '0.2rem' }}>
-        <button type="button" onClick={() => router.push('/')} style={{ padding: '0.4rem 0.6rem', background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', fontSize: '0.6rem', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>LIMPIAR FILTROS</button>
+        <button type="button" onClick={handleClear} style={{ padding: '0.4rem 0.6rem', background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', fontSize: '0.6rem', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>LIMPIAR FILTROS</button>
       </div>
     </form>
   );
