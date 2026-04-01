@@ -45,13 +45,16 @@ async function getMetadata() {
     allTecnicos.sort((a, b) => (a.full || a.abbr).localeCompare(b.full || b.abbr));
 
     return {
-      tecnicos: allTecnicos,
-      tipos: TIPOS_ORDEN,
-      prioridades: prioridades.recordset.map(r => r.prioridad).sort((a, b) => a - b)
+      success: true,
+      data: {
+        tecnicos: allTecnicos,
+        tipos: TIPOS_ORDEN,
+        prioridades: prioridades.recordset.map(r => r.prioridad).sort((a, b) => a - b)
+      }
     };
   } catch (error) {
     console.error("Error obteniendo metadatos: ", error.message);
-    return { tecnicos: [], tipos: [], prioridades: [] };
+    return { success: false, error: error.message, data: { tecnicos: [], tipos: [], prioridades: [] } };
   }
 }
 
@@ -76,13 +79,11 @@ async function getMonitorizacionData(filters = {}) {
       request.input('prioridad', sql.Int, parseInt(prioridad));
     }
     if (cliente) {
-      // Dividir por espacios para buscar independientemente del orden de nombre/apellido
       const palabras = cliente.trim().split(/\s+/).filter(Boolean);
       if (palabras.length === 1) {
         query += ' AND (cliente LIKE @cliente0 OR aviso LIKE @cliente0 OR comercial LIKE @cliente0)';
         request.input('cliente0', sql.VarChar, `%${palabras[0]}%`);
       } else {
-        // Cada palabra debe aparecer en el campo cliente (AND), sin importar el orden
         const condiciones = palabras.map((p, i) => {
           request.input(`cliente${i}`, sql.VarChar, `%${p}%`);
           return `(cliente LIKE @cliente${i})`;
@@ -106,10 +107,10 @@ async function getMonitorizacionData(filters = {}) {
 
     query += ' ORDER BY fecha DESC, prioridad DESC';
     const result = await request.query(query);
-    return result.recordset;
+    return { success: true, data: result.recordset };
   } catch (error) {
     console.error("Error conectando a SQL Server: ", error.message);
-    return [];
+    return { success: false, error: error.message, data: [] };
   }
 }
 
@@ -134,11 +135,14 @@ export default async function Page({ searchParams }) {
     fechaFin: params.fechaFin || today
   };
 
-  const [dbData, metadata] = await Promise.all([
+  const [monitorizacionRes, metadataRes] = await Promise.all([
     getMonitorizacionData(filters),
     getMetadata()
   ]);
 
+  const dbData = monitorizacionRes.data;
+  const metadata = metadataRes.data;
+  const connectionError = monitorizacionRes.error || metadataRes.error;
   const hasData = dbData.length > 0;
 
   return (
@@ -153,6 +157,31 @@ export default async function Page({ searchParams }) {
       </header>
 
       <main className="main-content" style={{ padding: '1rem 1.5rem' }}>
+        {connectionError && (
+          <div style={{ 
+            padding: '1rem', 
+            background: 'rgba(239, 68, 68, 0.1)', 
+            border: '1px solid #ef4444', 
+            borderRadius: '8px', 
+            color: '#ef4444', 
+            marginBottom: '1.5rem',
+            fontSize: '0.9rem'
+          }}>
+            <strong>⚠️ Error de conexión con la base de datos:</strong> {connectionError}
+            <br />
+            <small style={{ marginTop: '0.5rem', display: 'block', opacity: 0.8 }}>
+              Verifica el archivo .env y asegúrate de que el servidor tenga acceso a SQL Server.
+            </small>
+          </div>
+        )}
+
+        {!connectionError && !hasData && (
+          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+            <p style={{ fontSize: '1.1rem', fontWeight: '600' }}>Non hay datos para esta selección.</p>
+            <p style={{ fontSize: '0.85rem' }}>Proba a cambiar os filtros ou as fechas.</p>
+          </div>
+        )}
+
         <ul className="job-list" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', listStyle: 'none', padding: 0 }}>
           {dbData.map((item, index) => {
             const timeVal = formatTime(item.tiempo_total);
