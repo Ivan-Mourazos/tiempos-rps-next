@@ -15,7 +15,6 @@ const dbConfig = {
   }
 };
 
-// Mapeo códigos BD -> nombres amigables (confirmado por usuario)
 const TIPO_LABELS = {
   'PM': 'Instalaciones',
   'GC': 'Cobros',
@@ -25,21 +24,36 @@ const TIPO_LABELS = {
   'IN': 'Recados'
 };
 
-// Orden exacto del filtro
 const TIPOS_ORDEN = ['PM', 'GC', 'VT', 'TP', 'AS', 'IN'];
+
+async function getDbConnection() {
+  if (!global.sqlPool) {
+    global.sqlPool = new sql.ConnectionPool(dbConfig);
+    global.poolPromise = global.sqlPool.connect();
+  }
+  
+  const pool = await global.poolPromise;
+  if (!pool.connected) {
+    console.log('Reconectando a SQL Server...');
+    global.poolPromise = global.sqlPool.connect();
+    return await global.poolPromise;
+  }
+  return pool;
+}
 
 async function getMetadata() {
   try {
-    await sql.connect(dbConfig);
-    const [tecnicos, tipos, prioridades] = await Promise.all([
-      sql.query('SELECT DISTINCT abreviatura, comercial FROM tgm_monitorizacion WHERE abreviatura IS NOT NULL ORDER BY abreviatura'),
-      sql.query('SELECT DISTINCT tipo FROM tgm_monitorizacion WHERE tipo IS NOT NULL ORDER BY tipo'),
-      sql.query('SELECT DISTINCT prioridad FROM tgm_monitorizacion WHERE prioridad IS NOT NULL ORDER BY prioridad')
-    ]);
+    const pool = await getDbConnection();
+    const rTecnicos = await pool.request().query("SELECT DISTINCT abreviatura, comercial FROM tgm_monitorizacion WHERE abreviatura IS NOT NULL AND abreviatura != '' ORDER BY abreviatura");
+    const rTipos = await pool.request().query("SELECT DISTINCT tipo FROM tgm_monitorizacion WHERE tipo IS NOT NULL AND tipo != '' ORDER BY tipo");
+    const rPrioridades = await pool.request().query("SELECT DISTINCT prioridad FROM tgm_monitorizacion WHERE prioridad IS NOT NULL ORDER BY prioridad");
     
-    const allTecnicos = tecnicos.recordset.map(r => ({ 
-      abbr: r.abreviatura ? r.abreviatura.trim() : '', 
-      full: r.comercial ? r.comercial.trim() : '' 
+    const recTecnicos = rTecnicos.recordset || [];
+    const recPrioridades = rPrioridades.recordset || [];
+
+    const allTecnicos = recTecnicos.map(r => ({ 
+      abbr: r.abreviatura ? String(r.abreviatura).trim() : '', 
+      full: r.comercial ? String(r.comercial).trim() : '' 
     }));
 
     allTecnicos.sort((a, b) => (a.full || a.abbr).localeCompare(b.full || b.abbr));
@@ -49,11 +63,11 @@ async function getMetadata() {
       data: {
         tecnicos: allTecnicos,
         tipos: TIPOS_ORDEN,
-        prioridades: prioridades.recordset.map(r => r.prioridad).sort((a, b) => a - b)
+        prioridades: recPrioridades.map(r => r.prioridad).filter(p => p != null).sort((a, b) => a - b)
       }
     };
   } catch (error) {
-    console.error("Error obteniendo metadatos: ", error.message);
+    console.error("Error obteniendo metadatos:", error.message);
     return { success: false, error: error.message, data: { tecnicos: [], tipos: [], prioridades: [] } };
   }
 }
@@ -61,10 +75,10 @@ async function getMetadata() {
 async function getMonitorizacionData(filters = {}) {
   try {
     const { tecnico, tipo, prioridad, cliente, telefono, fechaInicio, fechaFin } = filters;
-    await sql.connect(dbConfig);
+    const pool = await getDbConnection();
     
     let query = 'SELECT * FROM tgm_monitorizacion WHERE 1=1';
-    const request = new sql.Request();
+    const request = pool.request();
 
     if (tecnico && tecnico !== 'TODOS') {
       query += ' AND (abreviatura = @tecnico OR comercial = @tecnico)';
@@ -82,34 +96,37 @@ async function getMonitorizacionData(filters = {}) {
       const palabras = cliente.trim().split(/\s+/).filter(Boolean);
       if (palabras.length === 1) {
         query += ' AND (cliente LIKE @cliente0 OR aviso LIKE @cliente0 OR comercial LIKE @cliente0)';
-        request.input('cliente0', sql.VarChar, `%${palabras[0]}%`);
+        request.input('cliente0', `%${palabras[0]}%`);
       } else {
         const condiciones = palabras.map((p, i) => {
-          request.input(`cliente${i}`, sql.VarChar, `%${p}%`);
+          request.input(`cliente${i}`, `%${p}%`);
           return `(cliente LIKE @cliente${i})`;
         });
         query += ` AND (${condiciones.join(' AND ')} OR aviso LIKE @clienteFull OR comercial LIKE @clienteFull)`;
-        request.input('clienteFull', sql.VarChar, `%${cliente}%`);
+        request.input('clienteFull', `%${cliente}%`);
       }
     }
     if (telefono) {
       query += ' AND (Telefono1 LIKE @telefono OR Telefono2 LIKE @telefono)';
-      request.input('telefono', sql.VarChar, `%${telefono}%`);
+      request.input('telefono', `%${telefono}%`);
     }
     if (fechaInicio) {
       query += ' AND fecha >= @fechaInicio';
-      request.input('fechaInicio', sql.Date, fechaInicio);
+      request.input('fechaInicio', sql.VarChar, fechaInicio);
     }
     if (fechaFin) {
       query += ' AND fecha < DATEADD(day, 1, @fechaFin)';
-      request.input('fechaFin', sql.Date, fechaFin);
+      request.input('fechaFin', sql.VarChar, fechaFin);
     }
 
     query += ' ORDER BY fecha DESC, prioridad DESC';
     const result = await request.query(query);
-    return { success: true, data: result.recordset };
+    const records = result.recordset || [];
+    
+    console.log(`[RPS] Query final: Range ${fechaInicio} - ${fechaFin}, Total: ${records.length}`);
+    return { success: true, data: records };
   } catch (error) {
-    console.error("Error conectando a SQL Server: ", error.message);
+    console.error("Error cargando monitorización:", error.message);
     return { success: false, error: error.message, data: [] };
   }
 }
@@ -135,14 +152,12 @@ export default async function Page({ searchParams }) {
     fechaFin: params.fechaFin || today
   };
 
-  const [monitorizacionRes, metadataRes] = await Promise.all([
-    getMonitorizacionData(filters),
-    getMetadata()
-  ]);
+  const monitorizacionRes = await getMonitorizacionData(filters);
+  const metadataRes = await getMetadata();
 
-  const dbData = monitorizacionRes.data;
-  const metadata = metadataRes.data;
-  const connectionError = monitorizacionRes.error || metadataRes.error;
+  const dbData = monitorizacionRes?.data || [];
+  const metadata = metadataRes?.data || { tecnicos: [], tipos: [], prioridades: [] };
+  const connectionError = monitorizacionRes?.error || metadataRes?.error;
   const hasData = dbData.length > 0;
 
   return (
@@ -186,11 +201,11 @@ export default async function Page({ searchParams }) {
           {dbData.map((item, index) => {
             const timeVal = formatTime(item.tiempo_total);
             const solutionVal = item.solucion || 'Pendente';
-            const dbTipo = item.tipo ? item.tipo.trim() : '';
-            const dbAbreviatura = item.abreviatura ? item.abreviatura.trim() : '';
-            const dbComercial = item.comercial ? item.comercial.trim() : '';
+            const dbTipo = item.tipo ? String(item.tipo).trim() : '';
+            const dbAbreviatura = item.abreviatura ? String(item.abreviatura).trim() : '';
+            const dbComercial = item.comercial ? String(item.comercial).trim() : '';
             const tecnicoVal = dbComercial || dbAbreviatura || 'N/A';
-            const avisoCompleto = `${item.aviso ? item.aviso.trim() : ''}-${dbTipo}`;
+            const avisoCompleto = `${item.aviso ? String(item.aviso).trim() : ''}-${dbTipo}`;
             const tipoEntero = TIPO_LABELS[dbTipo] || dbTipo;
             const priorityVal = item.prioridad;
             const obsVal = item.observaciones;
@@ -210,7 +225,6 @@ export default async function Page({ searchParams }) {
               }}>
                 {priorityVal === 1 && <span style={{ position: 'absolute', top: '-11px', right: '12px', background: 'var(--brand-orange)', color: 'white', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '3px', fontWeight: '900', letterSpacing: '0.05em' }}>ALTA PRIORIDADE</span>}
                 
-                {/* Header Line */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                      <span style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--brand-orange)' }}>{avisoCompleto}</span>
@@ -226,7 +240,6 @@ export default async function Page({ searchParams }) {
                    <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Tipo: {tipoEntero}</span>
                 </div>
                 
-                {/* Body Content */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: '1rem', fontSize: '0.85rem' }}>
                     <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -262,7 +275,6 @@ export default async function Page({ searchParams }) {
                   )}
                 </div>
 
-                {/* Footer Section */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', borderTop: '1px dotted var(--border-color)', paddingTop: '0.4rem' }}>
                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
                       <span>📅 {item.fecha ? new Date(item.fecha).toLocaleDateString('gl-ES', { day: 'numeric', month: 'short' }) : ''}</span>
