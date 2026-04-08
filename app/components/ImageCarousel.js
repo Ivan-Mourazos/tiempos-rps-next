@@ -20,6 +20,10 @@ export default function ImageCarousel({ images }) {
     setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
+  const currentImage = images[currentIndex];
+  const imageUrl = typeof currentImage === 'object' ? currentImage.url : currentImage;
+  const imageName = typeof currentImage === 'object' ? currentImage.originalName : `imagen_${currentIndex + 1}.jpg`;
+
   const carouselContent = (fullscreen) => (
     <div style={{
       position: 'relative',
@@ -34,7 +38,7 @@ export default function ImageCarousel({ images }) {
       zIndex: fullscreen ? 99999 : 1
     }}>
       <img
-        src={images[currentIndex]}
+        src={imageUrl}
         alt={`Imagen ${currentIndex + 1}`}
         style={{
           width: '100%',
@@ -75,8 +79,8 @@ export default function ImageCarousel({ images }) {
 
       {/* Botón de Descarga (Arriba Izquierda para no saturar) */}
       <a 
-        href={images[currentIndex]} 
-        download={`imagen_${currentIndex + 1}.jpg`}
+        href={imageUrl} 
+        download={imageName}
         onClick={(e) => e.stopPropagation()}
         title="Descargar imaxe orixinal"
         style={{

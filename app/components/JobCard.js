@@ -87,13 +87,33 @@ export default function JobCard({
         </div>
 
         {/* Columna 2 Opcional: Solo si hay Textos importantes */}
-        {obsVal && (
-            <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', paddingLeft: '0.5rem', height: '100%' }}>
-                <div style={{ padding: '0.6rem', borderLeft: '3px solid #3b82f6', background: 'rgba(59, 130, 246, 0.05)', fontSize: '0.85rem', color: 'var(--text-primary)', borderRadius: '0 4px 4px 0', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                    <strong style={{ display: 'block', fontSize: '0.65rem', textTransform: 'uppercase', color: '#3b82f6', marginBottom: '0.3rem' }}>Observacións IMPORTANTES</strong>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <ExpandableText text={obsVal} maxLines={8} onExpand={handleOpenModal} />
-                    </div>
+        {(obsVal || item.texto) && (
+            <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', paddingLeft: '0.5rem', height: '100%', overflow: 'hidden' }}>
+                <div style={{ 
+                    padding: '0.6rem', borderLeft: '3px solid #3b82f6', background: 'rgba(59, 130, 246, 0.05)', 
+                    fontSize: '0.82rem', color: 'var(--text-primary)', borderRadius: '0 4px 4px 0', 
+                    display: 'flex', flexDirection: 'column', flex: 1, gap: '0.6rem', overflow: 'hidden' 
+                }}>
+                    
+                    {/* Descrición Técnica (Arriba, flexible) */}
+                    {item.texto && (
+                        <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', minHeight: '2.8rem', overflow: 'hidden' }}>
+                            <strong style={{ display: 'block', fontSize: '0.62rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Descrición Técnica</strong>
+                            <div style={{ flex: 1, overflow: 'hidden' }}>
+                                <ExpandableText text={item.texto} maxLines={10} onExpand={handleOpenModal} />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Observacións (Abajo, se ajusta al contenido pero deja al menos 2 líneas arriba si es largo) */}
+                    {obsVal && (
+                        <div style={{ flex: '0 1 auto', display: 'flex', flexDirection: 'column', maxHeight: item.texto ? 'calc(100% - 3.2rem)' : '100%', overflow: 'hidden' }}>
+                            <strong style={{ display: 'block', fontSize: '0.62rem', textTransform: 'uppercase', color: '#3b82f6', marginBottom: '0.2rem' }}>Observacións IMPORTANTES</strong>
+                            <div style={{ overflow: 'hidden' }}>
+                                <ExpandableText text={obsVal} maxLines={10} onExpand={handleOpenModal} />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         )}

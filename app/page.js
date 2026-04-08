@@ -228,7 +228,12 @@ export default async function Page({ searchParams }) {
             }
 
             const gpsParts = item.gps && item.gps !== '0.0,0.0' ? item.gps.split(',') : null;
-            const photos = [item.foto1, item.foto2, item.foto3, item.foto4].filter(f => f && f !== '').map(p => `/api/images?path=${encodeURIComponent(p)}`);
+            const photos = [item.foto1, item.foto2, item.foto3, item.foto4]
+              .filter(f => f && f !== '')
+              .map(p => ({
+                url: `/api/images?path=${encodeURIComponent(p)}`,
+                originalName: p.split(/[\\/]/).pop() || 'image.jpg'
+              }));
             const cleanLocal = item.local?.replace(/['"]+/g, '').trim() || '';
             const cleanCliente = item.cliente?.replace(/['"]+/g, '').trim() || '';
             const isRealClientDifferent = cleanLocal.length > 0 && cleanLocal.toLowerCase() !== cleanCliente.toLowerCase();
