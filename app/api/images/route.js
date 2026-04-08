@@ -12,7 +12,7 @@ export async function GET(request) {
 
   if (rawPath.startsWith('http')) {
     try {
-      console.log(`[Proxy] Fetching HTTP: ${rawPath}`);
+      // Proxy fetching HTTP image
       const response = await fetch(rawPath);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       
@@ -41,7 +41,7 @@ export async function GET(request) {
 
   const fullPath = path.join(networkBase, safePath);
   
-  console.log(`[Proxy] Solicitando red local: ${fullPath}`);
+  // Serving local network image
 
   try {
     const fileBuffer = await fs.readFile(fullPath);

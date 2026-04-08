@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Clock, Calendar, User, MapPin, Phone, ImageOff } from 'lucide-react';
+import { Clock, Calendar, User, MapPin, Phone, ImageOff, ExternalLink } from 'lucide-react';
 import ExpandableText from './ExpandableText';
-import ImageCarousel from './ImageCarousel';
 import JobModal from './JobModal';
 
 export default function JobCard({ 
@@ -21,154 +20,162 @@ export default function JobCard({
 
   const handleOpenModal = () => setIsModalOpen(true);
 
+  // Link para Google Maps
+  const mapsUrl = gpsParts ? `https://www.google.com/maps/search/?api=1&query=${gpsParts[0]},${gpsParts[1]}` : null;
+
   return (
     <>
       <li className="job-card" style={{ 
-        display: 'flex', gap: '1.5rem', padding: '1.2rem', minHeight: '220px',
+        display: 'flex', 
+        flexDirection: 'column',
+        gap: '0.6rem', 
+        padding: '0.6rem', 
         border: priorityVal === 1 ? '2px solid var(--brand-orange)' : '1px solid var(--border-color)',
-        position: 'relative', overflow: 'hidden', alignItems: 'stretch'
+        position: 'relative', 
+        overflow: 'hidden'
       }}>
-        {priorityVal === 1 && <span style={{ position: 'absolute', top: '0', right: '0', zIndex: 10, background: 'var(--brand-orange)', color: 'white', fontSize: '0.55rem', padding: '4px 8px', borderBottomLeftRadius: '6px', fontWeight: '900', letterSpacing: '0.05em' }}>ALTA PRIORIDADE</span>}
-
-        {/* Columna 1: Datos y Cliente */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.2rem', paddingRight: '1.5rem', borderRight: '1px dotted var(--border-color)' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.8rem', flexWrap: 'nowrap', overflow: 'hidden' }}>
-                    <strong style={{ fontSize: '1.05rem', color: 'var(--brand-orange)', flexShrink: 0 }}>{avisoCompleto}</strong>
-                    <span style={{ 
-                        fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-secondary)', 
-                        textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', 
-                        textOverflow: 'ellipsis', flexShrink: 1, minWidth: 0 
-                    }} title={solutionVal}>
-                        {solutionVal}
-                    </span>
-                 </div>
-                 <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'nowrap', overflow: 'hidden' }}>
-                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', minWidth: 0, flexShrink: 1, overflow: 'hidden' }}>
-                         <User size={14} style={{ flexShrink: 0 }} /> 
-                         <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={tecnicoVal}>{tecnicoVal}</span>
-                     </span>
-                     <span style={{ color: 'var(--border-color)', flexShrink: 0 }}>|</span>
-                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: 'var(--text-secondary)', flexShrink: 0, whiteSpace: 'nowrap' }}><Calendar size={14} style={{ flexShrink: 0 }} /> {formattedDate}</span>
-                 </div>
-            </div>
-
-            <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <div style={{ fontWeight: '500', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-                    {item.cliente || 'Descoñecido'}
-                    {isRealClientDifferent && (
-                        <span style={{ marginLeft: '0.4rem', color: '#4338ca', fontWeight: '800' }}>
-                            ({item.local})
-                        </span>
-                    )}
-                </div>
-                <div style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.2rem' }}>
-                    {item.localidad && <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><MapPin size={14} /> {item.localidad}</span>}
-                    {(item.Telefono1 || item.Telefono2) && (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Phone size={14} /> {item.Telefono1 || ''} {item.Telefono2 ? `/ ${item.Telefono2}` : ''}</span>
-                    )}
-                </div>
-            </div>
-            
-            <div style={{ marginTop: 'auto', paddingTop: '0.5rem' }}>
-               <button 
-                  onClick={handleOpenModal}
-                  style={{ 
-                    background: 'var(--brand-orange)', color: 'white', border: 'none', 
-                    padding: '0.4rem 0.8rem', borderRadius: '4px', fontSize: '0.75rem', 
-                    fontWeight: 'bold', cursor: 'pointer', display: 'flex', 
-                    alignItems: 'center', gap: '0.3rem', boxShadow: 'var(--shadow-sm)',
-                    transition: 'opacity 0.2s'
-                  }}
-               >
-                 Ver Ficha Completa
-               </button>
-            </div>
-        </div>
-
-        {/* Columna 2 Opcional: Solo si hay Textos importantes */}
-        {(obsVal || item.texto) && (
-            <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', paddingLeft: '0.5rem', height: '100%', overflow: 'hidden' }}>
-                <div style={{ 
-                    padding: '0.6rem', borderLeft: '3px solid #3b82f6', background: 'rgba(59, 130, 246, 0.05)', 
-                    fontSize: '0.82rem', color: 'var(--text-primary)', borderRadius: '0 4px 4px 0', 
-                    display: 'flex', flexDirection: 'column', flex: 1, gap: '0.6rem', overflow: 'hidden' 
-                }}>
-                    
-                    {/* Descrición Técnica (Arriba, flexible) */}
-                    {item.texto && (
-                        <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', minHeight: '2.8rem', overflow: 'hidden' }}>
-                            <strong style={{ display: 'block', fontSize: '0.62rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Descrición Técnica</strong>
-                            <div style={{ flex: 1, overflow: 'hidden' }}>
-                                <ExpandableText text={item.texto} maxLines={10} onExpand={handleOpenModal} />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Observacións (Abajo, se ajusta al contenido pero deja al menos 2 líneas arriba si es largo) */}
-                    {obsVal && (
-                        <div style={{ flex: '0 1 auto', display: 'flex', flexDirection: 'column', maxHeight: item.texto ? 'calc(100% - 3.2rem)' : '100%', overflow: 'hidden' }}>
-                            <strong style={{ display: 'block', fontSize: '0.62rem', textTransform: 'uppercase', color: '#3b82f6', marginBottom: '0.2rem' }}>Observacións IMPORTANTES</strong>
-                            <div style={{ overflow: 'hidden' }}>
-                                <ExpandableText text={obsVal} maxLines={10} onExpand={handleOpenModal} />
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
+        {priorityVal === 1 && (
+          <span style={{ 
+            position: 'absolute', top: '0', left: '0', zIndex: 10, 
+            background: 'var(--brand-orange)', color: 'white', fontSize: '0.45rem', 
+            padding: '2px 6px', borderBottomRightRadius: '4px', fontWeight: '900' 
+          }}>
+            PRIORIDADE
+          </span>
         )}
 
-        {/* Columna Derecha: Tiempos y Medios Reorganizados */}
-        <div style={{ width: '440px', display: 'flex', flexShrink: 0, borderLeft: '1px dotted var(--border-color)', paddingLeft: '1.5rem', alignItems: 'stretch' }}>
-            <div style={{ display: 'flex', gap: '0.8rem', flex: 1, alignItems: 'stretch' }}>
-                
-                {/* Fotos (A la izquierda del grupo, maximizadas) */}
-                {photos.length > 0 ? (
-                    <div style={{ flex: 1, position: 'relative', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-                        <div style={{ position: 'absolute', inset: 0 }}>
-                            <ImageCarousel images={photos} />
-                        </div>
-                    </div>
-                ) : (
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', boxShadow: 'var(--shadow-sm)', opacity: 0.5 }}>
-                        <ImageOff size={24} />
-                    </div>
-                )}
-
-                {/* Grupo Vertical: Tiempo (arriba) + Mapa (abajo) */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', alignItems: 'flex-start', justifyContent: 'flex-start' }}>
-                    
-                    {/* Tiempo (Sin tarjeta, solo texto) */}
-                    <div style={{ width: 'fit-content', padding: '0.2rem 0' }}>
-                         <div style={{ fontSize: '0.9rem', fontWeight: '900', color: timeColor, display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
-                            <Clock size={15} /> {timeVal} {item.tiempo_previsto ? <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}>(Est: {estTimeVal})</span> : ''}
-                         </div>
-                    </div>
-
-                    {/* Mapa (Alineado por la IZQUIERDA con el tiempo) */}
-                    {gpsParts ? (
-                        <div style={{ width: '160px', height: '160px', position: 'relative', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-                            <div style={{ position: 'absolute', inset: 0 }}>
-                                <iframe
-                                    width="100%"
-                                    height="100%"
-                                    style={{ border: 0 }}
-                                    loading="lazy"
-                                    allowFullScreen
-                                    referrerPolicy="no-referrer-when-downgrade"
-                                    src={`https://maps.google.com/maps?q=${gpsParts[0]},${gpsParts[1]}&hl=es&z=15&output=embed`}
-                                ></iframe>
-                            </div>
-                        </div>
-                    ) : (
-                        <div style={{ width: '160px', height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', boxShadow: 'var(--shadow-sm)', opacity: 0.5 }}>
-                            <MapPin size={24} />
-                        </div>
-                    )}
-                </div>
-
+        {/* --- FILA 1: 3 COLUMNAS --- */}
+        <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'stretch', flexWrap: 'wrap' }}>
+          
+          {/* COLUMNA 1: Datos (Identificación y Cliente) */}
+          <div style={{ flex: '1 1 200px', display: 'flex', flexDirection: 'column', gap: '0.4rem', borderRight: '1px solid var(--border-color)', paddingRight: '0.6rem' }}>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                <strong style={{ fontSize: '0.85rem', color: 'var(--brand-orange)' }}>{avisoCompleto}</strong>
+                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 'bold', background: 'rgba(0,0,0,0.04)', padding: '2px 4px', borderRadius: '4px' }}>{solutionVal}</span>
+              </div>
+              <div style={{ fontSize: '0.7rem', display: 'flex', gap: '0.4rem', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: 'var(--text-primary)', fontWeight: '500' }}>
+                  <User size={10} /> {tecnicoVal}
+                </span>
+                <span>|</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                  <Calendar size={10} /> {formattedDate}
+                </span>
+              </div>
             </div>
+
+            <div style={{ fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+              <div style={{ fontWeight: '600' }}>
+                {item.cliente}
+                {isRealClientDifferent && <span style={{ color: '#4338ca', fontSize: '0.7rem', marginLeft: '0.4rem' }}>({item.local})</span>}
+              </div>
+              <div style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.6rem' }}>
+                {item.Telefono1 && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                    <Phone size={10} /> {item.Telefono1} {item.Telefono2 ? `/ ${item.Telefono2}` : ''}
+                  </span>
+                )}
+              </div>
+            </div>
+
+          </div>
+
+          {/* COLUMNA 2: Textos (Descripción y Observaciones) */}
+          <div style={{ flex: '2 1 300px', display: 'flex', gap: '0.6rem', borderRight: '1px solid var(--border-color)', paddingRight: '0.6rem' }}>
+            {(item.texto || obsVal) ? (
+               <>
+                {item.texto && (
+                  <div style={{ flex: '1 1 50%', background: 'rgba(0,0,0,0.02)', padding: '0.4rem', borderRadius: '4px', borderLeft: '2px solid var(--border-color)', fontSize: '0.75rem' }}>
+                    <strong style={{ display: 'block', fontSize: '0.55rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.15rem' }}>Descrición Técnica</strong>
+                    <div style={{ lineHeight: '1.2' }}>
+                       <ExpandableText text={item.texto} maxLines={6} onExpand={handleOpenModal} />
+                    </div>
+                  </div>
+                )}
+                {obsVal && (
+                  <div style={{ flex: '1 1 50%', background: 'rgba(59, 130, 246, 0.05)', padding: '0.4rem', borderRadius: '4px', borderLeft: '2px solid #3b82f6', fontSize: '0.75rem' }}>
+                    <strong style={{ display: 'block', fontSize: '0.55rem', textTransform: 'uppercase', color: '#3b82f6', marginBottom: '0.15rem' }}>Observacións</strong>
+                    <div style={{ lineHeight: '1.2' }}>
+                       <ExpandableText text={obsVal} maxLines={6} onExpand={handleOpenModal} />
+                    </div>
+                  </div>
+                )}
+               </>
+            ) : (
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', opacity: 0.5, fontSize: '0.7rem' }}>
+                  Sen descrición técnica
+                </div>
+            )}
+          </div>
+
+          {/* COLUMNA 3: Tiempo y Chincheta */}
+          <div style={{ flex: '0 0 auto', minWidth: '100px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start', gap: '0.6rem' }}>
+            
+            {/* Tiempo */}
+            <div style={{ 
+              fontSize: '0.85rem', fontWeight: '900', color: timeColor, 
+              display: 'flex', flexDirection: 'column', gap: '0.1rem', 
+              background: 'var(--bg-color)', padding: '0.3rem 0.5rem', 
+              borderRadius: '4px', border: '1px solid var(--border-color)',
+              width: '100%', alignItems: 'center'
+            }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                 <Clock size={12} /> {timeVal}
+               </div>
+               {item.tiempo_previsto && <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}>Est: {estTimeVal}</span>}
+            </div>
+
+            {/* Chincheta y Localidad */}
+            {item.localidad && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: 'var(--text-secondary)', width: '100%', justifyContent: 'center' }}>
+                 {mapsUrl ? (
+                    <a href={mapsUrl} target="_blank" rel="noopener noreferrer" title="Ver en Google Maps" style={{ color: '#ef4444', display: 'flex', alignItems: 'center' }}>
+                      <MapPin size={18} fill="#f87171" />
+                    </a>
+                 ) : (
+                    <MapPin size={18} style={{ color: 'gray' }} />
+                 )}
+                 <span style={{ fontWeight: '500' }}>{item.localidad}</span>
+              </div>
+            )}
+
+          </div>
+
         </div>
+
+        {/* --- FILA 2: Imágenes (De izquierda a derecha) --- */}
+        {photos.length > 0 && (
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', borderTop: '1px dashed var(--border-color)', paddingTop: '1rem' }}>
+            {photos.slice(0, 5).map((photo, i) => (
+              <div 
+                key={i} 
+                onClick={handleOpenModal}
+                style={{ 
+                  width: '200px', 
+                  height: '150px', 
+                  borderRadius: '4px', 
+                  overflow: 'hidden', 
+                  border: '1px solid var(--border-color)',
+                  cursor: 'pointer',
+                  background: '#1a1a1a', 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <img 
+                  src={photo.url} 
+                  alt="Traballo" 
+                  loading="lazy"
+                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
         {mounted && createPortal(
             <JobModal 
               isOpen={isModalOpen}

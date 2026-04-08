@@ -5,7 +5,6 @@ import { useTransition, useRef, useState } from 'react';
 
 export default function FilterForm({ filters, metadata, tipoLabels }) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
   const timeoutRef = useRef(null);
   const formRef = useRef(null);
   const [formKey, setFormKey] = useState(Date.now());
@@ -28,9 +27,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
         }
       }
 
-      startTransition(() => {
-        router.push(`/?${searchParams.toString()}`);
-      });
+      router.push(`/?${searchParams.toString()}`);
     }, delay);
   }
 
@@ -67,8 +64,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
         borderRadius: '6px',
         border: '1px solid var(--border-color)',
         alignItems: 'flex-end',
-        opacity: isPending ? 0.6 : 1,
-        transition: 'opacity 0.2s'
+        transition: 'all 0.2s'
       }}
     >
       <div style={{ flex: '1 1 140px' }}>
