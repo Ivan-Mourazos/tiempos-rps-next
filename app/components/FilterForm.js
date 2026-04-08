@@ -32,9 +32,18 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
   }
 
   function handleClear() {
-    if (formRef.current) formRef.current.reset();
-    setFormKey(Date.now());
-    router.push('/', { scroll: false });
+    const today = new Date().toISOString().split('T')[0];
+    if (formRef.current) {
+      const form = formRef.current;
+      form.tecnico.value = 'TODOS';
+      form.fechaInicio.value = today;
+      form.fechaFin.value = today;
+      form.tipo.value = 'TODOS';
+      form.prioridad.value = 'TODAS';
+      form.cliente.value = '';
+      form.telefono.value = '';
+    }
+    router.push('/');
   }
 
   const togglePicker = (id) => {
