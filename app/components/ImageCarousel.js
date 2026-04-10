@@ -4,16 +4,31 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Maximize2, X, Download } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
-export default function ImageCarousel({ images }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+export default function ImageCarousel({ images, initialIndex = 0, isFullScreenOnly = false, onClose }) {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [isFullscreen, setIsFullscreen] = useState(isFullScreenOnly);
+
+  // Sync internal state with props if they change externally
+  useEffect(() => {
+    setCurrentIndex(initialIndex);
+  }, [initialIndex]);
+
+  useEffect(() => {
+    setIsFullscreen(isFullScreenOnly);
+  }, [isFullScreenOnly]);
+
+  const handleClose = (e) => {
+    if (e) e.stopPropagation();
+    setIsFullscreen(false);
+    if (onClose) onClose();
+  };
 
   // Keyboard navigation
   useEffect(() => {
     if (!isFullscreen) return;
 
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') setIsFullscreen(false);
+      if (e.key === 'Escape') handleClose();
       if (e.key === 'ArrowLeft') setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
       if (e.key === 'ArrowRight') setCurrentIndex((prev) => (prev + 1) % images.length);
     };
@@ -59,7 +74,7 @@ export default function ImageCarousel({ images }) {
       {/* Background overlay for clicking to close in fullscreen */}
       {fullscreen && (
         <div 
-          onClick={() => setIsFullscreen(false)} 
+          onClick={handleClose} 
           style={{ position: 'absolute', inset: 0, zIndex: 5 }} 
         />
       )}
@@ -151,7 +166,7 @@ export default function ImageCarousel({ images }) {
             </a>
             
             <button 
-              onClick={(e) => { e.stopPropagation(); setIsFullscreen(false); }} 
+              onClick={handleClose} 
               style={{
                 background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', 
                 borderRadius: '50%', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', 
@@ -183,7 +198,7 @@ export default function ImageCarousel({ images }) {
 
   return (
     <>
-      {carouselContent(false)}
+      {!isFullScreenOnly && carouselContent(false)}
       {isFullscreen && createPortal(
         <div style={{ 
           position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 

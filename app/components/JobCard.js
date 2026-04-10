@@ -1,10 +1,9 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Clock, Calendar, User, MapPin, Phone, ImageOff, ExternalLink } from 'lucide-react';
+import { Clock, Calendar, User, MapPin, Phone, ImageOff, ExternalLink, ChevronRight } from 'lucide-react';
 import ExpandableText from './ExpandableText';
 import JobModal from './JobModal';
+import ImageCarousel from './ImageCarousel';
 
 export default function JobCard({ 
   item, index, timeVal, estTimeVal, solutionVal, 
@@ -12,6 +11,8 @@ export default function JobCard({
   timeColor, gpsParts, photos, isRealClientDifferent, formattedDate 
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -19,6 +20,12 @@ export default function JobCard({
   }, []);
 
   const handleOpenModal = () => setIsModalOpen(true);
+  
+  const handleOpenLightbox = (e, index) => {
+    e.stopPropagation();
+    setSelectedImageIndex(index);
+    setIsLightboxOpen(true);
+  };
 
   // Link para Google Maps
   const mapsUrl = gpsParts ? `https://www.google.com/maps/search/?api=1&query=${gpsParts[0]},${gpsParts[1]}` : null;
@@ -32,7 +39,8 @@ export default function JobCard({
         padding: '0.6rem', 
         border: priorityVal === 1 ? '2px solid var(--brand-orange)' : '1px solid var(--border-color)',
         position: 'relative', 
-        overflow: 'hidden'
+        overflow: 'hidden',
+        minHeight: '220px'
       }}>
         {priorityVal === 1 && (
           <span style={{ 
@@ -147,11 +155,11 @@ export default function JobCard({
 
         {/* --- FILA 2: Imágenes (De izquierda a derecha) --- */}
         {photos.length > 0 && (
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', borderTop: '1px dashed var(--border-color)', paddingTop: '1rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', borderTop: '1px dashed var(--border-color)', paddingTop: '1rem', paddingBottom: '0.5rem' }}>
             {photos.slice(0, 5).map((photo, i) => (
               <div 
                 key={i} 
-                onClick={handleOpenModal}
+                onClick={(e) => handleOpenLightbox(e, i)}
                 style={{ 
                   width: '200px', 
                   height: '150px', 
@@ -162,8 +170,12 @@ export default function JobCard({
                   background: '#1a1a1a', 
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  transition: 'transform 0.2s',
+                  position: 'relative'
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               >
                 <img 
                   src={photo.url} 
@@ -176,7 +188,48 @@ export default function JobCard({
           </div>
         )}
 
+        {/* Botón Ver Ficha Completa (Abajo a la derecha) */}
+        <div style={{ 
+          position: 'absolute', 
+          bottom: '0.6rem', 
+          right: '0.6rem', 
+          zIndex: 5 
+        }}>
+          <button 
+            onClick={handleOpenModal}
+            style={{
+              background: 'var(--surface-color)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '6px',
+              padding: '0.4rem 0.8rem',
+              fontSize: '0.75rem',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--brand-orange)';
+              e.currentTarget.style.color = 'white';
+              e.currentTarget.style.borderColor = 'var(--brand-orange)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'var(--surface-color)';
+              e.currentTarget.style.color = 'var(--text-primary)';
+              e.currentTarget.style.borderColor = 'var(--border-color)';
+            }}
+          >
+            Ver ficha completa <ChevronRight size={14} />
+          </button>
+        </div>
+
+        {/* Portales para Modales y Lightbox */}
         {mounted && createPortal(
+          <>
             <JobModal 
               isOpen={isModalOpen}
               onClose={() => setIsModalOpen(false)}
@@ -190,8 +243,17 @@ export default function JobCard({
               timeColor={timeColor}
               solutionVal={solutionVal}
               formattedDate={formattedDate}
-            />,
-            document.body
+            />
+            {isLightboxOpen && (
+              <ImageCarousel 
+                images={photos} 
+                initialIndex={selectedImageIndex} 
+                isFullScreenOnly={true} 
+                onClose={() => setIsLightboxOpen(false)} 
+              />
+            )}
+          </>,
+          document.body
         )}
       </li>
     </>
