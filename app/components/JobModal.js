@@ -26,15 +26,18 @@ export default function JobModal({ isOpen, onClose, item, photos, gpsParts, avis
   
   return (
     <div 
+      className={`modal-overlay ${isOpen ? 'active' : ''}`}
       style={{
         position: 'fixed',
-        inset: 0,
-        zIndex: 9999,
-        display: 'flex',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        display: isOpen ? 'flex' : 'none',
         justifyContent: 'flex-end',
-        visibility: isOpen ? 'visible' : 'hidden',
-        pointerEvents: isOpen ? 'auto' : 'none',
-        transition: 'visibility 0.3s ease'
+        zIndex: 9999,
+        transition: 'opacity 0.3s'
       }}
     >
       <div 

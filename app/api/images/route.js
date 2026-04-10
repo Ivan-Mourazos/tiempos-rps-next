@@ -5,6 +5,9 @@ import path from 'path';
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const rawPath = searchParams.get('path');
+  const clientIp = request.headers.get('x-forwarded-for') || 'local';
+
+  console.log(`[Image Request] IP: ${clientIp}, Path: ${rawPath}`);
 
   if (!rawPath) {
     return new NextResponse('Missing path', { status: 400 });
@@ -12,7 +15,6 @@ export async function GET(request) {
 
   if (rawPath.startsWith('http')) {
     try {
-      // Proxy fetching HTTP image
       const response = await fetch(rawPath);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       
@@ -41,8 +43,6 @@ export async function GET(request) {
 
   const fullPath = path.join(networkBase, safePath);
   
-  // Serving local network image
-
   try {
     const fileBuffer = await fs.readFile(fullPath);
     const ext = path.extname(fullPath).toLowerCase();
@@ -51,6 +51,8 @@ export async function GET(request) {
     else if (ext === '.gif') contentType = 'image/gif';
     else if (ext === '.webp') contentType = 'image/webp';
 
+    console.log(`[Image Success] Serving: ${fullPath}`);
+
     return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': contentType,
@@ -58,7 +60,7 @@ export async function GET(request) {
       },
     });
   } catch (error) {
-    console.error(`[Proxy Error] ENOENT: ${fullPath}`);
+    console.error(`[Proxy Error] No se pudo leer el archivo en: ${fullPath}. Error: ${error.message}`);
     return new NextResponse('Image not found', { status: 404 });
   }
 }

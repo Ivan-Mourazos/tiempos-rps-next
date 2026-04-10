@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Clock, Calendar, User, MapPin, Phone, ImageOff, ExternalLink, ChevronRight } from 'lucide-react';
@@ -19,10 +21,14 @@ export default function JobCard({
     setMounted(true);
   }, []);
 
-  const handleOpenModal = () => setIsModalOpen(true);
+  const handleOpenModal = () => {
+    console.log(`[JobCard] Open Modal for ${avisoCompleto}`);
+    setIsModalOpen(true);
+  };
   
   const handleOpenLightbox = (e, index) => {
     e.stopPropagation();
+    console.log(`[JobCard] Open Lightbox for index ${index}`);
     setSelectedImageIndex(index);
     setIsLightboxOpen(true);
   };
@@ -40,7 +46,8 @@ export default function JobCard({
         border: priorityVal === 1 ? '2px solid var(--brand-orange)' : '1px solid var(--border-color)',
         position: 'relative', 
         overflow: 'hidden',
-        minHeight: '220px'
+        minHeight: '220px',
+        background: 'var(--bg-color)'
       }}>
         {priorityVal === 1 && (
           <span style={{ 
@@ -172,7 +179,8 @@ export default function JobCard({
                   alignItems: 'center',
                   justifyContent: 'center',
                   transition: 'transform 0.2s',
-                  position: 'relative'
+                  position: 'relative',
+                  pointerEvents: 'auto'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                 onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
@@ -210,7 +218,8 @@ export default function JobCard({
               gap: '0.3rem',
               cursor: 'pointer',
               transition: 'all 0.2s',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+              pointerEvents: 'auto'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = 'var(--brand-orange)';
@@ -230,20 +239,22 @@ export default function JobCard({
         {/* Portales para Modales y Lightbox */}
         {mounted && createPortal(
           <>
-            <JobModal 
-              isOpen={isModalOpen}
-              onClose={() => setIsModalOpen(false)}
-              item={item}
-              photos={photos}
-              gpsParts={gpsParts}
-              avisoCompleto={avisoCompleto}
-              tecnicoVal={tecnicoVal}
-              timeVal={timeVal}
-              estTimeVal={estTimeVal}
-              timeColor={timeColor}
-              solutionVal={solutionVal}
-              formattedDate={formattedDate}
-            />
+            {isModalOpen && (
+              <JobModal 
+                isOpen={true}
+                onClose={() => setIsModalOpen(false)}
+                item={item}
+                photos={photos}
+                gpsParts={gpsParts}
+                avisoCompleto={avisoCompleto}
+                tecnicoVal={tecnicoVal}
+                timeVal={timeVal}
+                estTimeVal={estTimeVal}
+                timeColor={timeColor}
+                solutionVal={solutionVal}
+                formattedDate={formattedDate}
+              />
+            )}
             {isLightboxOpen && (
               <ImageCarousel 
                 images={photos} 
