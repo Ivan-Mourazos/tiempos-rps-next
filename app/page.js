@@ -116,12 +116,32 @@ async function JobBoard({ filters, limit }) {
       query += ' AND fecha >= @fechaInicio';
       request.input('fechaInicio', fechaInicio);
     }
-    if (fechaFin) {
-      query += ' AND fecha < DATEADD(day, 1, @fechaFin)';
-      request.input('fechaFin', fechaFin);
+    
+    // Determine the end date for SQL and Order logic
+    // If no end date was chosen in the params but we have a start date, 
+    // it functions as a single day filter (for the start date) per user request.
+    const effectiveFechaFin = filters.fechaFin || filters.fechaInicio;
+    
+    if (effectiveFechaFin) {
+      query += ' AND fecha < DATEADD(day, 1, @fechaFinSql)';
+      request.input('fechaFinSql', effectiveFechaFin);
     }
 
-    query += ' ORDER BY fecha DESC, hora DESC';
+    // Lógica orden web vieja revisada
+    if (!filters.fechaInicio && !filters.fechaFin) {
+      // Default: últimos registros primero
+      query += ' ORDER BY fecha DESC, hora DESC';
+    } else if (filters.fechaInicio && !filters.fechaFin) {
+      // Día específico suelto: orden hora descendente (nuevos primero)
+      query += ' ORDER BY fecha DESC, hora DESC';
+    } else if (filters.fechaInicio === effectiveFechaFin) {
+      // Mismo día explícito
+      query += ' ORDER BY fecha DESC, hora DESC';
+    } else {
+      // Intervalo de varios días
+      query += ' ORDER BY fecha ASC, hora DESC';
+    }
+
     const result = await request.query(query);
     const dbData = result.recordset || [];
 
@@ -212,14 +232,16 @@ export default async function Page({ searchParams }) {
   const today = new Date().toISOString().split('T')[0];
   const limit = parseInt(params.limit) || 100;
 
+  // If no params and default initialization, we leave them as undefined/empty so fields are blank
+
   const filters = {
     tecnico: params.tecnico || 'TODOS',
     tipo: params.tipo || 'TODOS',
     prioridad: params.prioridad || 'TODAS',
     cliente: params.cliente || '',
     telefono: params.telefono || '',
-    fechaInicio: params.fechaInicio || today,
-    fechaFin: params.fechaFin || today
+    fechaInicio: params.fechaInicio || '',
+    fechaFin: params.fechaFin || ''
   };
 
   // El metadata lo cargamos de forma asíncrona también para no bloquear el esqueleto base

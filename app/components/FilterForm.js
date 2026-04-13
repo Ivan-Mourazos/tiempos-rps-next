@@ -32,12 +32,11 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
   }
 
   function handleClear() {
-    const today = new Date().toISOString().split('T')[0];
     if (formRef.current) {
       const form = formRef.current;
       form.tecnico.value = 'TODOS';
-      form.fechaInicio.value = today;
-      form.fechaFin.value = today;
+      form.fechaInicio.value = '';
+      form.fechaFin.value = '';
       form.tipo.value = 'TODOS';
       form.prioridad.value = 'TODAS';
       form.cliente.value = '';

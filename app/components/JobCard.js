@@ -46,7 +46,6 @@ export default function JobCard({
         border: priorityVal === 1 ? '2px solid var(--brand-orange)' : '1px solid var(--border-color)',
         position: 'relative', 
         overflow: 'hidden',
-        minHeight: '220px',
         background: 'var(--bg-color)'
       }}>
         {priorityVal === 1 && (
@@ -198,9 +197,9 @@ export default function JobCard({
 
         {/* Botón Ver Ficha Completa (Abajo a la derecha) */}
         <div style={{ 
-          position: 'absolute', 
-          bottom: '0.6rem', 
-          right: '0.6rem', 
+          display: 'flex', 
+          justifyContent: 'flex-end',
+          marginTop: photos.length > 0 ? '0.5rem' : 'auto',
           zIndex: 5 
         }}>
           <button 
