@@ -125,36 +125,73 @@ export default function JobCard({
           </div>
 
           {/* COLUMNA 3: Tiempo y Chincheta */}
-          <div style={{ flex: '0 0 auto', minWidth: '100px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start', gap: '0.6rem' }}>
+          <div style={{ flex: '0 0 auto', minWidth: '120px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem' }}>
             
-            {/* Tiempo */}
-            <div style={{ 
-              fontSize: '0.85rem', fontWeight: '900', color: timeColor, 
-              display: 'flex', flexDirection: 'column', gap: '0.1rem', 
-              background: 'var(--bg-color)', padding: '0.3rem 0.5rem', 
-              borderRadius: '4px', border: '1px solid var(--border-color)',
-              width: '100%', alignItems: 'center'
-            }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                 <Clock size={12} /> {timeVal}
-               </div>
-               {!!item.tiempo_previsto && <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}>Est: {estTimeVal}</span>}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', width: '100%', alignItems: 'center' }}>
+              {/* Tiempo */}
+              <div style={{ 
+                fontSize: '0.85rem', fontWeight: '900', color: timeColor, 
+                display: 'flex', flexDirection: 'column', gap: '0.1rem', 
+                background: 'var(--bg-color)', padding: '0.3rem 0.5rem', 
+                borderRadius: '4px', border: '1px solid var(--border-color)',
+                width: '100%', alignItems: 'center'
+              }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                   <Clock size={12} /> {timeVal}
+                 </div>
+                 {!!item.tiempo_previsto && <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}>Est: {estTimeVal}</span>}
+              </div>
+
+              {/* Chincheta y Localidad */}
+              {item.localidad && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: 'var(--text-secondary)', width: '100%', justifyContent: 'center' }}>
+                   {mapsUrl ? (
+                      <a href={mapsUrl} target="_blank" rel="noopener noreferrer" title="Ver en Google Maps" style={{ color: '#ef4444', display: 'flex', alignItems: 'center' }}>
+                        <MapPin size={18} fill="#f87171" />
+                      </a>
+                   ) : (
+                      <MapPin size={18} style={{ color: 'gray' }} />
+                   )}
+                   <span style={{ fontWeight: '500' }}>{item.localidad}</span>
+                </div>
+              )}
             </div>
 
-            {/* Chincheta y Localidad */}
-            {item.localidad && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: 'var(--text-secondary)', width: '100%', justifyContent: 'center' }}>
-                 {mapsUrl ? (
-                    <a href={mapsUrl} target="_blank" rel="noopener noreferrer" title="Ver en Google Maps" style={{ color: '#ef4444', display: 'flex', alignItems: 'center' }}>
-                      <MapPin size={18} fill="#f87171" />
-                    </a>
-                 ) : (
-                    <MapPin size={18} style={{ color: 'gray' }} />
-                 )}
-                 <span style={{ fontWeight: '500' }}>{item.localidad}</span>
-              </div>
-            )}
-
+            {/* Botón Ver Ficha Completa integrado en la columna 3 */}
+            <button 
+              onClick={handleOpenModal}
+              style={{
+                background: 'var(--surface-color)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                padding: '0.3rem 0.6rem',
+                fontSize: '0.65rem',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.2rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                pointerEvents: 'auto',
+                width: '100%',
+                justifyContent: 'center',
+                marginTop: 'auto'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--brand-orange)';
+                e.currentTarget.style.color = 'white';
+                e.currentTarget.style.borderColor = 'var(--brand-orange)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'var(--surface-color)';
+                e.currentTarget.style.color = 'var(--text-primary)';
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+              }}
+            >
+              Ficha <ChevronRight size={12} />
+            </button>
           </div>
 
         </div>
@@ -195,45 +232,6 @@ export default function JobCard({
           </div>
         )}
 
-        {/* Botón Ver Ficha Completa (Abajo a la derecha) */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'flex-end',
-          marginTop: photos.length > 0 ? '0.5rem' : 'auto',
-          zIndex: 5 
-        }}>
-          <button 
-            onClick={handleOpenModal}
-            style={{
-              background: 'var(--surface-color)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '6px',
-              padding: '0.4rem 0.8rem',
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.3rem',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-              pointerEvents: 'auto'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--brand-orange)';
-              e.currentTarget.style.color = 'white';
-              e.currentTarget.style.borderColor = 'var(--brand-orange)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'var(--surface-color)';
-              e.currentTarget.style.color = 'var(--text-primary)';
-              e.currentTarget.style.borderColor = 'var(--border-color)';
-            }}
-          >
-            Ver ficha completa <ChevronRight size={14} />
-          </button>
-        </div>
 
         {/* Portales para Modales y Lightbox */}
         {mounted && createPortal(
