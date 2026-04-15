@@ -7,7 +7,8 @@ import ImageCarousel from './ImageCarousel';
 export default function JobModal({ 
   isOpen, onClose, item, photos, gpsParts, avisoCompleto, tecnicoVal, 
   timeVal, estTimeVal, timeColor, solutionVal, formattedDate,
-  asistencia, direccionCompleta, telefonoPreaviso
+  asistencia, direccionCompleta, telefonoPreaviso,
+  zipCode, provincia, localidadCliente
 }) {
   const [mounted, setMounted] = useState(false);
 
@@ -102,13 +103,18 @@ export default function JobModal({
                   <strong style={{ display: 'block', marginBottom: '0.2rem', fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Cliente / Local</strong>
                   {item.cliente || 'Descoñecido'} {item.local ? <span style={{ color: '#4338ca', fontWeight: '600' }}>({item.local})</span> : ''}
                   {direccionCompleta && (
-                    <div style={{ marginTop: '0.4rem', color: 'var(--text-primary)', fontWeight: '500' }}>
-                      {direccionCompleta}
+                    <div style={{ marginTop: '0.6rem', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '0.1rem', background: 'var(--bg-color)', padding: '0.8rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                      <div style={{ fontWeight: '600' }}>{direccionCompleta}</div>
+                      <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: '500' }}>
+                        {zipCode && <span>{zipCode} </span>}
+                        {localidadCliente || item.localidad}
+                        {provincia && <span> ({provincia})</span>}
+                      </div>
                     </div>
                   )}
               </div>
               <div style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.4rem' }}>
-                  {item.localidad && <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><MapPin size={16} /> {item.localidad}</span>}
+                  {!direccionCompleta && item.localidad && <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><MapPin size={16} /> {item.localidad}</span>}
                   {(item.Telefono1 || item.Telefono2) && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Phone size={16} /> {item.Telefono1 || ''} {item.Telefono2 ? `/ ${item.Telefono2}` : ''}</span>
                   )}

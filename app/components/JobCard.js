@@ -11,7 +11,8 @@ export default function JobCard({
   item, index, timeVal, estTimeVal, solutionVal, 
   tecnicoVal, avisoCompleto, priorityVal, obsVal, 
   timeColor, gpsParts, photos, isRealClientDifferent, formattedDate,
-  asistencia, direccionCompleta, telefonoPreaviso 
+  asistencia, direccionCompleta, telefonoPreaviso,
+  zipCode, provincia, localidadCliente
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -264,6 +265,9 @@ export default function JobCard({
                 asistencia={asistencia}
                 direccionCompleta={direccionCompleta}
                 telefonoPreaviso={telefonoPreaviso}
+                zipCode={zipCode}
+                provincia={provincia}
+                localidadCliente={localidadCliente}
               />
             )}
             {isLightboxOpen && (

@@ -1,0 +1,29 @@
+const sql = require('mssql');
+require('dotenv').config({ path: '.env' });
+
+const cfg = {
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  server: process.env.DB_SERVER,
+  database: process.env.DB_NAME,
+  options: { encrypt: false, trustServerCertificate: true }
+};
+
+async function main() {
+  const pool = await sql.connect(cfg);
+  
+  console.log('--- BUSCANDO TABLAS DE ESTADOS/PROVINCIAS ---');
+  const tables = await pool.request().query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE 'GENState%' OR TABLE_NAME LIKE '%Provincia%'");
+  console.table(tables.recordset);
+
+  if (tables.recordset.length > 0) {
+      const t = tables.recordset[0].TABLE_NAME;
+      const cols = await pool.request().query(`SELECT TOP 1 * FROM ${t}`);
+      console.log(`\nMuestra de ${t}:`);
+      console.log(cols.recordset[0]);
+  }
+
+  process.exit(0);
+}
+
+main().catch(e => { console.error(e.message); process.exit(1); });

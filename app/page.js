@@ -76,8 +76,8 @@ async function getMetadata() {
   }
 }
 
-// Columnas principales y datos extendidos vía JOIN
-const SQL_COLUMNS = "m.aviso, m.cliente, m.local, m.localidad, m.Telefono1, m.Telefono2, m.fecha, m.hora, m.tiempo_total, m.tiempo_previsto, m.comercial, m.abreviatura, m.tipo, m.prioridad, m.texto, m.observaciones, m.gps, m.foto1, m.foto2, m.foto3, m.foto4, m.solucion, m.asistencia, d.DireccionCliente, d.TelefonoPreavisoCliente";
+// Columnas principales y datos extendidos vía JOIN (Dirección Completa y Pre-aviso)
+const SQL_COLUMNS = "m.aviso, m.cliente, m.local, m.localidad, m.Telefono1, m.Telefono2, m.fecha, m.hora, m.tiempo_total, m.tiempo_previsto, m.comercial, m.abreviatura, m.tipo, m.prioridad, m.texto, m.observaciones, m.gps, m.foto1, m.foto2, m.foto3, m.foto4, m.solucion, m.asistencia, d.DireccionCliente, d.TelefonoPreavisoCliente, d.LocalidadCliente, c.ZipCode, s.Description as Provincia";
 
 // Componente que carga los datos de la lista (Board)
 async function JobBoard({ filters, limit }) {
@@ -85,7 +85,12 @@ async function JobBoard({ filters, limit }) {
   
   try {
     const pool = await getDbConnection();
-    let query = `SELECT TOP ${limit} ${SQL_COLUMNS} FROM tgm_monitorizacion m LEFT JOIN TGM_ORDENES_MANTENIMIENTO_DIA d ON m.asistencia = d.CodOrdenMantenimiento WHERE 1=1`;
+    let query = `SELECT TOP ${limit} ${SQL_COLUMNS} 
+                 FROM tgm_monitorizacion m 
+                 LEFT JOIN TGM_ORDENES_MANTENIMIENTO_DIA d ON m.asistencia = d.CodOrdenMantenimiento 
+                 LEFT JOIN FACCustomer c ON d.CodCliente = c.CodCustomer AND d.CodCompany = c.CodCompany
+                 LEFT JOIN GENState s ON c.IDState = s.IDState
+                 WHERE 1=1`;
     const request = pool.request();
 
     if (tecnico && tecnico !== 'TODOS') {
@@ -213,6 +218,9 @@ function JobCardWrapper({ item, index }) {
       asistencia={item.asistencia}
       direccionCompleta={item.DireccionCliente}
       telefonoPreaviso={item.TelefonoPreavisoCliente}
+      zipCode={item.ZipCode}
+      provincia={item.Provincia}
+      localidadCliente={item.LocalidadCliente}
       timeVal={formatTime(item.tiempo_total)}
       estTimeVal={formatTime(item.tiempo_previsto)}
       solutionVal={item.solucion || 'Pendente'}
