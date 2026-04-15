@@ -20,13 +20,13 @@
 }
 
 html.dark {
-  --bg-color: #0f172a;
-  --surface-color: #1e293b;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --border-color: #334155;
+  --bg-color: #2d2a2e;
+  --surface-color: #403e41;
+  --text-primary: #fcfcfa;
+  --text-secondary: #939293;
+  --border-color: #5b595c;
   
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
   color-scheme: dark;
 }
 
