@@ -93,8 +93,19 @@ export default function JobModal({
                  <div style={{ fontSize: '1.1rem', fontWeight: '900', color: timeColor, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                     <Clock size={20} /> {timeVal} {!!item.tiempo_previsto ? <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}>(Est: {estTimeVal})</span> : ''}
                  </div>
-                 <div style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
-                    Solución: {solutionVal}
+                 <div style={{ 
+                    fontSize: '0.9rem', 
+                    fontWeight: '900', 
+                    color: 'var(--brand-orange)', 
+                    background: 'rgba(243, 112, 33, 0.1)', 
+                    padding: '0.4rem 0.8rem', 
+                    borderRadius: '4px', 
+                    border: '1px solid rgba(243, 112, 33, 0.2)',
+                    textTransform: 'uppercase',
+                    display: 'inline-block',
+                    width: 'fit-content'
+                 }}>
+                    {solutionVal}
                  </div>
            </div>
            
