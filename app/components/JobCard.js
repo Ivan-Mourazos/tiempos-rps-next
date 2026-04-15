@@ -10,7 +10,8 @@ import ImageCarousel from './ImageCarousel';
 export default function JobCard({ 
   item, index, timeVal, estTimeVal, solutionVal, 
   tecnicoVal, avisoCompleto, priorityVal, obsVal, 
-  timeColor, gpsParts, photos, isRealClientDifferent, formattedDate 
+  timeColor, gpsParts, photos, isRealClientDifferent, formattedDate,
+  asistencia, direccionCompleta, telefonoPreaviso 
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -66,8 +67,18 @@ export default function JobCard({
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                <strong style={{ fontSize: '0.85rem', color: 'var(--brand-orange)' }}>{avisoCompleto}</strong>
-                <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 'bold', background: 'rgba(0,0,0,0.04)', padding: '2px 4px', borderRadius: '4px' }}>{solutionVal}</span>
+                <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>{avisoCompleto}</strong>
+                <span style={{ 
+                  fontSize: '0.65rem', 
+                  color: 'var(--brand-orange)', 
+                  fontWeight: '800', 
+                  background: 'rgba(234,88,12,0.1)', 
+                  border: '1px solid rgba(234,88,12,0.35)',
+                  padding: '2px 7px', 
+                  borderRadius: '4px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.03em'
+                }}>{solutionVal}</span>
               </div>
               <div style={{ fontSize: '0.7rem', display: 'flex', gap: '0.4rem', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: 'var(--text-primary)', fontWeight: '500' }}>
@@ -250,6 +261,9 @@ export default function JobCard({
                 timeColor={timeColor}
                 solutionVal={solutionVal}
                 formattedDate={formattedDate}
+                asistencia={asistencia}
+                direccionCompleta={direccionCompleta}
+                telefonoPreaviso={telefonoPreaviso}
               />
             )}
             {isLightboxOpen && (

@@ -76,8 +76,8 @@ async function getMetadata() {
   }
 }
 
-// Columnas específicas para reducir carga en red
-const SQL_COLUMNS = "aviso, cliente, local, localidad, Telefono1, Telefono2, fecha, hora, tiempo_total, tiempo_previsto, comercial, abreviatura, tipo, prioridad, texto, observaciones, gps, foto1, foto2, foto3, foto4, solucion";
+// Columnas principales y datos extendidos vía JOIN
+const SQL_COLUMNS = "m.aviso, m.cliente, m.local, m.localidad, m.Telefono1, m.Telefono2, m.fecha, m.hora, m.tiempo_total, m.tiempo_previsto, m.comercial, m.abreviatura, m.tipo, m.prioridad, m.texto, m.observaciones, m.gps, m.foto1, m.foto2, m.foto3, m.foto4, m.solucion, m.asistencia, d.DireccionCliente, d.TelefonoPreavisoCliente";
 
 // Componente que carga los datos de la lista (Board)
 async function JobBoard({ filters, limit }) {
@@ -85,35 +85,35 @@ async function JobBoard({ filters, limit }) {
   
   try {
     const pool = await getDbConnection();
-    let query = `SELECT TOP ${limit} ${SQL_COLUMNS} FROM tgm_monitorizacion WHERE 1=1`;
+    let query = `SELECT TOP ${limit} ${SQL_COLUMNS} FROM tgm_monitorizacion m LEFT JOIN TGM_ORDENES_MANTENIMIENTO_DIA d ON m.asistencia = d.CodOrdenMantenimiento WHERE 1=1`;
     const request = pool.request();
 
     if (tecnico && tecnico !== 'TODOS') {
-      query += ' AND (abreviatura = @tecnico OR comercial = @tecnico)';
+      query += ' AND (m.abreviatura = @tecnico OR m.comercial = @tecnico)';
       request.input('tecnico', tecnico);
     }
     if (tipo && tipo !== 'TODOS') {
-      query += ' AND tipo = @tipo';
+      query += ' AND m.tipo = @tipo';
       request.input('tipo', tipo);
     }
     if (prioridad && prioridad !== 'TODAS') {
-      query += ' AND prioridad = @prioridad';
+      query += ' AND m.prioridad = @prioridad';
       request.input('prioridad', parseInt(prioridad));
     }
     if (cliente) {
       const palabras = cliente.trim().split(/\s+/).filter(Boolean);
       query += ` AND (${palabras.map((p, i) => {
         request.input(`cliente${i}`, `%${p}%`);
-        return `cliente LIKE @cliente${i}`;
-      }).join(' AND ')} OR aviso LIKE @clienteFull OR comercial LIKE @clienteFull)`;
+        return `m.cliente LIKE @cliente${i}`;
+      }).join(' AND ')} OR m.aviso LIKE @clienteFull OR m.comercial LIKE @clienteFull)`;
       request.input('clienteFull', `%${cliente}%`);
     }
     if (telefono) {
-      query += ' AND (Telefono1 LIKE @telefono OR Telefono2 LIKE @telefono)';
+      query += ' AND (m.Telefono1 LIKE @telefono OR m.Telefono2 LIKE @telefono)';
       request.input('telefono', `%${telefono}%`);
     }
     if (fechaInicio) {
-      query += ' AND fecha >= @fechaInicio';
+      query += ' AND m.fecha >= @fechaInicio';
       request.input('fechaInicio', fechaInicio);
     }
     
@@ -123,23 +123,23 @@ async function JobBoard({ filters, limit }) {
     const effectiveFechaFin = filters.fechaFin || filters.fechaInicio;
     
     if (effectiveFechaFin) {
-      query += ' AND fecha < DATEADD(day, 1, @fechaFinSql)';
+      query += ' AND m.fecha < DATEADD(day, 1, @fechaFinSql)';
       request.input('fechaFinSql', effectiveFechaFin);
     }
 
     // Lógica orden web vieja revisada
     if (!filters.fechaInicio && !filters.fechaFin) {
       // Default: últimos registros primero
-      query += ' ORDER BY fecha DESC, hora DESC';
+      query += ' ORDER BY m.fecha DESC, m.hora DESC';
     } else if (filters.fechaInicio && !filters.fechaFin) {
       // Día específico suelto: orden hora descendente (nuevos primero)
-      query += ' ORDER BY fecha DESC, hora DESC';
+      query += ' ORDER BY m.fecha DESC, m.hora DESC';
     } else if (filters.fechaInicio === effectiveFechaFin) {
       // Mismo día explícito
-      query += ' ORDER BY fecha DESC, hora DESC';
+      query += ' ORDER BY m.fecha DESC, m.hora DESC';
     } else {
       // Intervalo de varios días
-      query += ' ORDER BY fecha ASC, hora DESC';
+      query += ' ORDER BY m.fecha ASC, m.hora DESC';
     }
 
     const result = await request.query(query);
@@ -210,6 +210,9 @@ function JobCardWrapper({ item, index }) {
     <JobCard 
       index={index}
       item={{...item, local: cleanLocal, cliente: cleanCliente}}
+      asistencia={item.asistencia}
+      direccionCompleta={item.DireccionCliente}
+      telefonoPreaviso={item.TelefonoPreavisoCliente}
       timeVal={formatTime(item.tiempo_total)}
       estTimeVal={formatTime(item.tiempo_previsto)}
       solutionVal={item.solucion || 'Pendente'}
@@ -232,7 +235,8 @@ export default async function Page({ searchParams }) {
   const today = new Date().toISOString().split('T')[0];
   const limit = parseInt(params.limit) || 100;
 
-  // If no params and default initialization, we leave them as undefined/empty so fields are blank
+  // Si no hay ningún parámetro de fecha, la carga inicial muestra solo el día de hoy
+  const hasDateParams = params.fechaInicio || params.fechaFin;
 
   const filters = {
     tecnico: params.tecnico || 'TODOS',
@@ -240,7 +244,7 @@ export default async function Page({ searchParams }) {
     prioridad: params.prioridad || 'TODAS',
     cliente: params.cliente || '',
     telefono: params.telefono || '',
-    fechaInicio: params.fechaInicio || '',
+    fechaInicio: params.fechaInicio || (hasDateParams ? '' : today),
     fechaFin: params.fechaFin || ''
   };
 

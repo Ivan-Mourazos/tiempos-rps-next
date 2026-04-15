@@ -4,7 +4,11 @@ import { useEffect, useState } from 'react';
 import { X, Clock, MapPin, Phone, Calendar, User } from 'lucide-react';
 import ImageCarousel from './ImageCarousel';
 
-export default function JobModal({ isOpen, onClose, item, photos, gpsParts, avisoCompleto, tecnicoVal, timeVal, estTimeVal, timeColor, solutionVal, formattedDate }) {
+export default function JobModal({ 
+  isOpen, onClose, item, photos, gpsParts, avisoCompleto, tecnicoVal, 
+  timeVal, estTimeVal, timeColor, solutionVal, formattedDate,
+  asistencia, direccionCompleta, telefonoPreaviso
+}) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -97,11 +101,29 @@ export default function JobModal({ isOpen, onClose, item, photos, gpsParts, avis
               <div>
                   <strong style={{ display: 'block', marginBottom: '0.2rem', fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Cliente / Local</strong>
                   {item.cliente || 'Descoñecido'} {item.local ? <span style={{ color: '#4338ca', fontWeight: '600' }}>({item.local})</span> : ''}
+                  {direccionCompleta && (
+                    <div style={{ marginTop: '0.4rem', color: 'var(--text-primary)', fontWeight: '500' }}>
+                      {direccionCompleta}
+                    </div>
+                  )}
               </div>
               <div style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.4rem' }}>
                   {item.localidad && <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><MapPin size={16} /> {item.localidad}</span>}
                   {(item.Telefono1 || item.Telefono2) && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Phone size={16} /> {item.Telefono1 || ''} {item.Telefono2 ? `/ ${item.Telefono2}` : ''}</span>
+                  )}
+                  {asistencia && (
+                    <div style={{ marginTop: '0.8rem', padding: '0.6rem', background: 'rgba(234, 88, 12, 0.05)', borderRadius: '6px', border: '1px dashed var(--brand-orange)' }}>
+                      <strong style={{ display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--brand-orange)', marginBottom: '0.2rem' }}>Pre-aviso / Asistencia</strong>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem', alignItems: 'center' }}>
+                        <span style={{ fontWeight: '700' }}>{asistencia}</span>
+                        {telefonoPreaviso && (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--brand-orange)', fontWeight: '600' }}>
+                            <Phone size={14} /> {telefonoPreaviso}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   )}
               </div>
            </div>
