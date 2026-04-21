@@ -1,3 +1,4 @@
+import Script from 'next/script'
 import './globals.css'
 
 export const metadata = {
@@ -8,9 +9,12 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="gl">
-      <head>
-        <script
+      <body>
+        {children}
+        <Script
+          id="speculation-rules"
           type="speculationrules"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               prerender: [
@@ -30,8 +34,7 @@ export default function RootLayout({ children }) {
             })
           }}
         />
-      </head>
-      <body>{children}</body>
+      </body>
     </html>
   )
 }
