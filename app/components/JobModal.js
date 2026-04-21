@@ -6,7 +6,7 @@ import ImageCarousel from './ImageCarousel';
 
 export default function JobModal({ 
   isOpen, onClose, item, photos, gpsParts, avisoCompleto, tecnicoVal, 
-  timeVal, estTimeVal, timeColor, solutionVal, formattedDate,
+  timeVal, estTimeVal, timeColor, typeColor, solutionVal, formattedDate,
   asistencia, direccionCompleta, telefonoPreaviso,
   zipCode, provincia, localidadCliente
 }) {
@@ -65,7 +65,7 @@ export default function JobModal({
           maxWidth: '600px',
           height: '100%',
           background: 'var(--bg-color)',
-          borderLeft: '1px solid var(--border-color)',
+          borderLeft: `5px solid ${typeColor}`,
           boxShadow: '-4px 0 20px rgba(0,0,0,0.1)',
           transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -76,7 +76,7 @@ export default function JobModal({
       >
         <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-             <strong style={{ fontSize: '1.3rem', color: 'var(--brand-orange)' }}>{avisoCompleto}</strong>
+             <strong style={{ fontSize: '1.3rem', color: typeColor }}>{avisoCompleto}</strong>
              <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}><User size={16} /> {tecnicoVal}</span>
                  <span style={{ color: 'var(--border-color)', margin: '0 0.2rem' }}>|</span>
@@ -96,11 +96,11 @@ export default function JobModal({
                  <div style={{ 
                     fontSize: '0.9rem', 
                     fontWeight: '900', 
-                    color: 'var(--brand-orange)', 
-                    background: 'rgba(243, 112, 33, 0.1)', 
+                    color: typeColor, 
+                    background: `${typeColor}1a`, 
                     padding: '0.4rem 0.8rem', 
                     borderRadius: '4px', 
-                    border: '1px solid rgba(243, 112, 33, 0.2)',
+                    border: `1px solid ${typeColor}33`, 
                     textTransform: 'uppercase',
                     display: 'inline-block',
                     width: 'fit-content'
@@ -129,7 +129,8 @@ export default function JobModal({
                   {(item.Telefono1 || item.Telefono2) && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Phone size={16} /> {item.Telefono1 || ''} {item.Telefono2 ? `/ ${item.Telefono2}` : ''}</span>
                   )}
-                  {asistencia && (
+{/* Pre-aviso oculto temporalmente por petición del usuario */}
+                  {/* asistencia && (
                     <div style={{ marginTop: '0.8rem', padding: '0.6rem', background: 'rgba(234, 88, 12, 0.05)', borderRadius: '6px', border: '1px dashed var(--brand-orange)' }}>
                       <strong style={{ display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--brand-orange)', marginBottom: '0.2rem' }}>Pre-aviso / Asistencia</strong>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem', alignItems: 'center' }}>
@@ -141,7 +142,7 @@ export default function JobModal({
                         )}
                       </div>
                     </div>
-                  )}
+                  ) */}
               </div>
            </div>
 

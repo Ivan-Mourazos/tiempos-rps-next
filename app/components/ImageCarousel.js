@@ -119,14 +119,23 @@ export default function ImageCarousel({ images, initialIndex = 0, isFullScreenOn
             position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
             display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.4)', padding: '6px 12px', borderRadius: '16px', zIndex: 20
           }}>
-            {images.map((_, i) => (
-              <div key={i} onClick={(e) => { e.stopPropagation(); setCurrentIndex(i); }} style={{
-                width: '10px', height: '10px', borderRadius: '50%', cursor: 'pointer',
-                background: i === currentIndex ? 'white' : 'rgba(255,255,255,0.4)',
-                transform: i === currentIndex ? 'scale(1.2)' : 'scale(1)',
-                transition: 'all 0.2s'
-              }} />
-            ))}
+            {images.length > 7 ? (
+              <div style={{
+                color: 'white', fontSize: '0.8rem', fontWeight: '600',
+                textShadow: '0 1px 2px rgba(0,0,0,0.8)'
+              }}>
+                {currentIndex + 1} / {images.length}
+              </div>
+            ) : (
+              images.map((_, i) => (
+                <div key={i} onClick={(e) => { e.stopPropagation(); setCurrentIndex(i); }} style={{
+                  width: '10px', height: '10px', borderRadius: '50%', cursor: 'pointer',
+                  background: i === currentIndex ? 'white' : 'rgba(255,255,255,0.4)',
+                  transform: i === currentIndex ? 'scale(1.2)' : 'scale(1)',
+                  transition: 'all 0.2s'
+                }} />
+              ))
+            )}
           </div>
         </>
       )}

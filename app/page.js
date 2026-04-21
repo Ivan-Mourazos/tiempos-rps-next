@@ -6,6 +6,7 @@ import AutoRefresh from './components/AutoRefresh';
 import JobCard from './components/JobCard';
 import JobCardSkeleton from './components/JobCardSkeleton';
 import LoadMore from './components/LoadMore';
+import ScrollToTop from './components/ScrollToTop';
 
 // Configuración de la DB
 const dbConfig = {
@@ -159,12 +160,38 @@ async function JobBoard({ filters, limit }) {
       );
     }
 
+    // Fetch all photos for the current batch from the new view
+    const asistencias = dbData.map(d => d.asistencia).filter(Boolean);
+    let photosMap = {};
+    
+    if (asistencias.length > 0) {
+      try {
+        // Query the new view for all photos related to these asistencias
+        const photoResult = await pool.request()
+          .query(`SELECT asistencia, foto FROM TGM_MONITORIZACION_FOTOS WHERE asistencia IN (${asistencias.map(a => `'${String(a).trim()}'`).join(',')})`);
+        
+        const photoRecords = photoResult.recordset || [];
+        
+        // Group photos by asistencia
+        photoRecords.forEach(row => {
+          const key = String(row.asistencia).trim();
+          if (!photosMap[key]) photosMap[key] = [];
+          photosMap[key].push(row.foto);
+        });
+      } catch (photoError) {
+        console.error("Error fetching photos from TGM_MONITORIZACION_FOTOS:", photoError.message);
+        // Fallback: photosMap will be empty, will use legacy columns
+      }
+    }
+
     return (
       <>
         <ul className="job-list" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', listStyle: 'none', padding: 0 }}>
-          {dbData.map((item, index) => (
-            <JobCardWrapper key={index} item={item} index={index} />
-          ))}
+          {dbData.map((item, index) => {
+            const asistKey = item.asistencia ? String(item.asistencia).trim() : null;
+            const extraPhotos = asistKey ? photosMap[asistKey] : null;
+            return <JobCardWrapper key={index} item={item} index={index} extraPhotos={extraPhotos} />;
+          })}
         </ul>
         {dbData.length >= limit && (
           <LoadMore currentLimit={limit} />
@@ -181,7 +208,7 @@ async function JobBoard({ filters, limit }) {
 }
 
 // Wrapper para formatear los datos de cada tarjeta
-function JobCardWrapper({ item, index }) {
+function JobCardWrapper({ item, index, extraPhotos }) {
   const formatTime = (minutes) => {
     if (!minutes || minutes === 0) return '0h 00m';
     const h = Math.floor(minutes / 60);
@@ -199,12 +226,18 @@ function JobCardWrapper({ item, index }) {
     else if (item.tiempo_total < item.tiempo_previsto) timeColor = '#10b981';
   }
 
-  const photos = [item.foto1, item.foto2, item.foto3, item.foto4]
-    .filter(f => f && f !== '')
-    .map(p => ({
-      url: `/api/images?path=${encodeURIComponent(p)}`,
-      originalName: p.split(/[\\/]/).pop() || 'image.jpg'
-    }));
+  // Use extraPhotos if available, otherwise fallback to legacy columns
+  let rawPhotos = [];
+  if (extraPhotos && extraPhotos.length > 0) {
+    rawPhotos = extraPhotos;
+  } else {
+    rawPhotos = [item.foto1, item.foto2, item.foto3, item.foto4].filter(f => f && f !== '');
+  }
+
+  const photos = rawPhotos.map(p => ({
+    url: `/api/images?path=${encodeURIComponent(p)}`,
+    originalName: String(p).split(/[\\/]/).pop() || 'image.jpg'
+  }));
 
   const cleanLocal = item.local?.replace(/['"]+/g, '').trim() || '';
   const cleanCliente = item.cliente?.replace(/['"]+/g, '').trim() || '';
@@ -288,6 +321,7 @@ export default async function Page({ searchParams }) {
         >
           <JobBoard filters={filters} limit={limit} />
         </Suspense>
+        <ScrollToTop />
       </main>
     </div>
   );

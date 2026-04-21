@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Clock, Calendar, User, MapPin, Phone, ImageOff, ExternalLink, ChevronRight } from 'lucide-react';
 import ExpandableText from './ExpandableText';
@@ -19,6 +19,19 @@ export default function JobCard({
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
 
+  // Mapeo de colores por tipo (según especificación del usuario)
+  const getTypeColor = (tipo) => {
+    const t = String(tipo || '').trim().toUpperCase();
+    switch (t) {
+      case 'PM': return '#6792FF'; // Puesta en marcha
+      case 'VT': return '#64FF95'; // Visitas
+      case 'IN': return '#E4A2F6'; // Recados
+      default: return '#FF7052';   // Avisos / Resto
+    }
+  };
+
+  const typeColor = getTypeColor(item.tipo);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -35,6 +48,61 @@ export default function JobCard({
     setIsLightboxOpen(true);
   };
 
+  // Ref y estados para el arrastre (drag-to-scroll)
+  const scrollRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [dragged, setDragged] = useState(false); // Para distinguir entre click y drag
+
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    setStartX(e.pageX - scrollRef.current.offsetLeft);
+    setScrollLeft(scrollRef.current.scrollLeft);
+    setDragged(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX) * 2; // Velocidad de arrastre
+    if (Math.abs(walk) > 2) {
+      setDragged(true);
+    }
+    scrollRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  // Efecto para limpiar el estado de arrastre globalmente
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, [isDragging]);
+
+  const handlePhotoClick = (e, index) => {
+    if (dragged) {
+      e.stopPropagation();
+      e.preventDefault();
+      setDragged(false);
+      return;
+    }
+    handleOpenLightbox(e, index);
+  };
+
   // Link para Google Maps
   const mapsUrl = gpsParts ? `https://www.google.com/maps/search/?api=1&query=${gpsParts[0]},${gpsParts[1]}` : null;
 
@@ -45,10 +113,12 @@ export default function JobCard({
         flexDirection: 'column',
         gap: '0.6rem', 
         padding: '0.6rem', 
-        border: priorityVal === 1 ? '2px solid var(--brand-orange)' : '1px solid var(--border-color)',
+        paddingLeft: '1rem', // Aumentado para dar espacio al borde de color
+        border: '1px solid var(--border-color)',
+        borderLeft: `6px solid ${typeColor}`, // Borde grueso lateral según el tipo
         position: 'relative', 
         overflow: 'hidden',
-        background: 'var(--bg-color)'
+        background: 'var(--bg-color)',
       }}>
         {priorityVal === 1 && (
           <span style={{ 
@@ -68,7 +138,14 @@ export default function JobCard({
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                <strong style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>{avisoCompleto}</strong>
+                <strong style={{ 
+                  fontSize: '0.9rem', 
+                  color: 'white', 
+                  background: typeColor, 
+                  padding: '2px 8px', 
+                  borderRadius: '4px',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                }}>{avisoCompleto}</strong>
                 <span style={{ 
                   fontSize: '0.65rem', 
                   color: 'var(--brand-orange)', 
@@ -208,39 +285,92 @@ export default function JobCard({
 
         </div>
 
-        {/* --- FILA 2: Imágenes (De izquierda a derecha) --- */}
+        {/* --- FILA 2: Imágenes (Horizontal scroll) --- */}
         {photos.length > 0 && (
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', borderTop: '1px dashed var(--border-color)', paddingTop: '1rem', paddingBottom: '0.5rem' }}>
-            {photos.slice(0, 5).map((photo, i) => (
-              <div 
-                key={i} 
-                onClick={(e) => handleOpenLightbox(e, i)}
-                style={{ 
-                  width: '200px', 
-                  height: '150px', 
-                  borderRadius: '4px', 
-                  overflow: 'hidden', 
-                  border: '1px solid var(--border-color)',
-                  cursor: 'pointer',
-                  background: '#1a1a1a', 
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'transform 0.2s',
-                  position: 'relative',
-                  pointerEvents: 'auto'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-              >
-                <img 
-                  src={photo.url} 
-                  alt="Traballo" 
-                  loading="lazy"
-                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                />
+          <div style={{ position: 'relative', marginTop: '0.4rem' }}>
+            <div 
+              ref={scrollRef}
+              onMouseDown={handleMouseDown}
+              onMouseLeave={handleMouseLeave}
+              onMouseUp={handleMouseUp}
+              onMouseMove={handleMouseMove}
+              style={{ 
+                display: 'flex', 
+                gap: '0.6rem', 
+                overflowX: 'auto', 
+                paddingBottom: '0.6rem',
+                paddingTop: '0.4rem',
+                borderTop: '1px dashed var(--border-color)',
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'var(--brand-orange) transparent',
+                msOverflowStyle: 'none',
+                WebkitOverflowScrolling: 'touch',
+                scrollSnapType: isDragging ? 'none' : 'x proximity',
+                cursor: isDragging ? 'grabbing' : 'grab',
+                userSelect: 'none'
+              }}
+              className="custom-scrollbar"
+            >
+              {photos.map((photo, i) => (
+                <div 
+                  key={i} 
+                  onClick={(e) => handlePhotoClick(e, i)}
+                  onDragStart={(e) => e.preventDefault()} // Evita el arrastre nativo de imágenes
+                  style={{ 
+                    flex: '0 0 160px',
+                    height: '110px', 
+                    borderRadius: '6px', 
+                    overflow: 'hidden', 
+                    border: '1px solid var(--border-color)',
+                    cursor: 'pointer',
+                    background: '#1a1a1a', 
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s',
+                    position: 'relative',
+                    pointerEvents: 'auto',
+                    scrollSnapAlign: 'start'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  <img 
+                    src={photo.url} 
+                    alt={`Traballo ${i + 1}`} 
+                    loading="lazy"
+                    style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                  />
+                  {photos.length > 1 && (
+                    <span style={{ 
+                      position: 'absolute', bottom: '4px', right: '4px', 
+                      background: 'rgba(0,0,0,0.6)', color: 'white', 
+                      fontSize: '0.55rem', padding: '2px 5px', borderRadius: '3px' 
+                    }}>
+                      {i + 1} / {photos.length}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+            {/* Indicador de más fotos a la derecha */}
+            {photos.length > 3 && (
+              <div style={{
+                position: 'absolute',
+                right: 0,
+                top: '0.4rem',
+                bottom: '0.6rem',
+                width: '40px',
+                background: 'linear-gradient(to left, var(--bg-color), transparent)',
+                pointerEvents: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                paddingRight: '4px'
+              }}>
+                <ChevronRight size={16} color="var(--brand-orange)" style={{ filter: 'drop-shadow(0 0 2px white)' }} />
               </div>
-            ))}
+            )}
           </div>
         )}
 
@@ -260,6 +390,7 @@ export default function JobCard({
                 timeVal={timeVal}
                 estTimeVal={estTimeVal}
                 timeColor={timeColor}
+                typeColor={typeColor}
                 solutionVal={solutionVal}
                 formattedDate={formattedDate}
                 asistencia={asistencia}
