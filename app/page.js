@@ -52,8 +52,8 @@ async function getMetadata() {
   try {
     const pool = await getDbConnection();
     const [rTecnicos, rPrioridades] = await Promise.all([
-      pool.request().query("SELECT DISTINCT abreviatura, comercial FROM tgm_monitorizacion WHERE abreviatura IS NOT NULL AND abreviatura != '' ORDER BY abreviatura"),
-      pool.request().query("SELECT DISTINCT prioridad FROM tgm_monitorizacion WHERE prioridad IS NOT NULL ORDER BY prioridad")
+      pool.request().query("SELECT DISTINCT abreviatura, comercial FROM tgm_monitorizacion WITH (NOLOCK) WHERE abreviatura IS NOT NULL AND abreviatura != '' ORDER BY abreviatura"),
+      pool.request().query("SELECT DISTINCT prioridad FROM tgm_monitorizacion WITH (NOLOCK) WHERE prioridad IS NOT NULL ORDER BY prioridad")
     ]);
     
     const recTecnicos = rTecnicos.recordset || [];
@@ -87,10 +87,10 @@ async function JobBoard({ filters, limit }) {
   try {
     const pool = await getDbConnection();
     let query = `SELECT TOP ${limit} ${SQL_COLUMNS} 
-                 FROM tgm_monitorizacion m 
-                 LEFT JOIN TGM_ORDENES_MANTENIMIENTO_DIA d ON m.asistencia = d.CodOrdenMantenimiento 
-                 LEFT JOIN FACCustomer c ON d.CodCliente = c.CodCustomer AND d.CodCompany = c.CodCompany
-                 LEFT JOIN GENState s ON c.IDState = s.IDState
+                 FROM tgm_monitorizacion m WITH (NOLOCK)
+                 LEFT JOIN TGM_ORDENES_MANTENIMIENTO_DIA d WITH (NOLOCK) ON m.asistencia = d.CodOrdenMantenimiento 
+                 LEFT JOIN FACCustomer c WITH (NOLOCK) ON d.CodCliente = c.CodCustomer AND d.CodCompany = c.CodCompany
+                 LEFT JOIN GENState s WITH (NOLOCK) ON c.IDState = s.IDState
                  WHERE 1=1`;
     const request = pool.request();
 
@@ -168,7 +168,7 @@ async function JobBoard({ filters, limit }) {
       try {
         // Query the new view for all photos related to these asistencias
         const photoResult = await pool.request()
-          .query(`SELECT asistencia, foto FROM TGM_MONITORIZACION_FOTOS WHERE asistencia IN (${asistencias.map(a => `'${String(a).trim()}'`).join(',')})`);
+          .query(`SELECT asistencia, foto FROM TGM_MONITORIZACION_FOTOS WITH (NOLOCK) WHERE asistencia IN (${asistencias.map(a => `'${String(a).trim()}'`).join(',')})`);
         
         const photoRecords = photoResult.recordset || [];
         

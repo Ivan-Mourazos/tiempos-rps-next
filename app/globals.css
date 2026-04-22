@@ -108,6 +108,45 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: var(--shadow-lg);
 }
 
+.job-card-main {
+  display: grid;
+  grid-template-columns: 320px 1fr 1fr 150px;
+  gap: 1.2rem;
+  align-items: stretch;
+}
+
+/* Ajustes de columnas para pantallas medianas */
+@media (max-width: 1400px) {
+  .job-card-main {
+    grid-template-columns: 300px 1fr 1fr 140px;
+    gap: 1rem;
+  }
+}
+
+/* Cambio a 2x2 en pantallas más pequeñas */
+@media (max-width: 1000px) {
+  .job-card-main {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .job-card-main > div {
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.8rem;
+    padding-right: 0 !important;
+  }
+  .job-card-main > div:last-child {
+    border-bottom: none;
+  }
+}
+
+/* Una sola columna en móvil */
+@media (max-width: 600px) {
+  .job-card-main {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   .job-list {
     grid-template-columns: 1fr;

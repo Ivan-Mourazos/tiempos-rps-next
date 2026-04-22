@@ -7,7 +7,7 @@ export async function GET(request) {
   const rawPath = searchParams.get('path');
   const clientIp = request.headers.get('x-forwarded-for') || 'local';
 
-  console.log(`[Image Request] IP: ${clientIp}, Path: ${rawPath}`);
+
 
   if (!rawPath) {
     return new NextResponse('Missing path', { status: 400 });
@@ -51,7 +51,7 @@ export async function GET(request) {
     else if (ext === '.gif') contentType = 'image/gif';
     else if (ext === '.webp') contentType = 'image/webp';
 
-    console.log(`[Image Success] Serving: ${fullPath}`);
+
 
     return new NextResponse(fileBuffer, {
       headers: {

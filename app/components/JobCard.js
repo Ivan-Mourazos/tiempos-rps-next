@@ -18,6 +18,7 @@ export default function JobCard({
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [showScrollArrow, setShowScrollArrow] = useState(false);
 
   // Mapeo de colores por tipo (según especificación del usuario)
   const getTypeColor = (tipo) => {
@@ -34,16 +35,27 @@ export default function JobCard({
 
   useEffect(() => {
     setMounted(true);
+    checkScroll();
+    
+    // Volver a comprobar si la ventana cambia de tamaño
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
   }, []);
 
+  const checkScroll = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      // Mostramos la flecha si queda más de 10px por scrollar a la derecha
+      setShowScrollArrow(scrollWidth > clientWidth + scrollLeft + 10);
+    }
+  };
+
   const handleOpenModal = () => {
-    console.log(`[JobCard] Open Modal for ${avisoCompleto}`);
     setIsModalOpen(true);
   };
   
   const handleOpenLightbox = (e, index) => {
     e.stopPropagation();
-    console.log(`[JobCard] Open Lightbox for index ${index}`);
     setSelectedImageIndex(index);
     setIsLightboxOpen(true);
   };
@@ -130,32 +142,31 @@ export default function JobCard({
           </span>
         )}
 
-        {/* --- FILA 1: 3 COLUMNAS --- */}
-        <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'stretch', flexWrap: 'wrap' }}>
+        {/* --- FILA 1: 4 COLUMNAS (GRID) --- */}
+        <div className="job-card-main">
           
           {/* COLUMNA 1: Datos (Identificación y Cliente) */}
-          <div style={{ flex: '1 1 200px', display: 'flex', flexDirection: 'column', gap: '0.4rem', borderRight: '1px solid var(--border-color)', paddingRight: '0.6rem' }}>
-            
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderRight: '1px solid var(--border-color)', paddingRight: '0.6rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                 <strong style={{ 
-                  fontSize: '0.9rem', 
-                  color: 'white', 
-                  background: typeColor, 
-                  padding: '2px 8px', 
-                  borderRadius: '4px',
-                  textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                   fontSize: '0.9rem', 
+                   color: 'white', 
+                   background: typeColor, 
+                   padding: '2px 8px', 
+                   borderRadius: '4px',
+                   textShadow: '0 1px 2px rgba(0,0,0,0.2)'
                 }}>{avisoCompleto}</strong>
                 <span style={{ 
-                  fontSize: '0.65rem', 
-                  color: 'var(--brand-orange)', 
-                  fontWeight: '800', 
-                  background: 'rgba(234,88,12,0.1)', 
-                  border: '1px solid rgba(234,88,12,0.35)',
-                  padding: '2px 7px', 
-                  borderRadius: '4px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.03em'
+                   fontSize: '0.65rem', 
+                   color: 'var(--brand-orange)', 
+                   fontWeight: '800', 
+                   background: 'rgba(234,88,12,0.1)', 
+                   border: '1px solid rgba(234,88,12,0.35)',
+                   padding: '2px 7px', 
+                   borderRadius: '4px',
+                   textTransform: 'uppercase',
+                   letterSpacing: '0.03em'
                 }}>{solutionVal}</span>
               </div>
               <div style={{ fontSize: '0.7rem', display: 'flex', gap: '0.4rem', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
@@ -170,9 +181,21 @@ export default function JobCard({
             </div>
 
             <div style={{ fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-              <div style={{ fontWeight: '600' }}>
-                {item.cliente}
-                {isRealClientDifferent && <span style={{ color: '#4338ca', fontSize: '0.7rem', marginLeft: '0.4rem' }}>({item.local})</span>}
+              <div style={{ fontWeight: '600', lineHeight: '1.2' }}>
+                <div style={{ marginBottom: '0.1rem' }}>{item.cliente}</div>
+                {isRealClientDifferent && (
+                  <div style={{ 
+                    color: '#4338ca', 
+                    fontSize: '0.65rem', 
+                    fontWeight: '500',
+                    background: 'rgba(67, 56, 202, 0.05)',
+                    padding: '1px 4px',
+                    borderRadius: '3px',
+                    display: 'inline-block'
+                  }}>
+                    {item.local}
+                  </div>
+                )}
               </div>
               <div style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.6rem' }}>
                 {item.Telefono1 && (
@@ -182,42 +205,39 @@ export default function JobCard({
                 )}
               </div>
             </div>
-
           </div>
 
-          {/* COLUMNA 2: Textos (Descripción y Observaciones) */}
-          <div style={{ flex: '2 1 300px', display: 'flex', gap: '0.6rem', borderRight: '1px solid var(--border-color)', paddingRight: '0.6rem' }}>
-            {(item.texto || obsVal) ? (
-               <>
-                {item.texto && (
-                  <div style={{ flex: '1 1 50%', background: 'rgba(0,0,0,0.02)', padding: '0.4rem', borderRadius: '4px', borderLeft: '2px solid var(--border-color)', fontSize: '0.75rem' }}>
-                    <strong style={{ display: 'block', fontSize: '0.55rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.15rem' }}>Descrición Técnica</strong>
-                    <div style={{ lineHeight: '1.2' }}>
-                       <ExpandableText text={item.texto} maxLines={6} onExpand={handleOpenModal} />
-                    </div>
-                  </div>
-                )}
-                {obsVal && (
-                  <div style={{ flex: '1 1 50%', background: 'rgba(59, 130, 246, 0.05)', padding: '0.4rem', borderRadius: '4px', borderLeft: '2px solid #3b82f6', fontSize: '0.75rem' }}>
-                    <strong style={{ display: 'block', fontSize: '0.55rem', textTransform: 'uppercase', color: '#3b82f6', marginBottom: '0.15rem' }}>Observacións</strong>
-                    <div style={{ lineHeight: '1.2' }}>
-                       <ExpandableText text={obsVal} maxLines={6} onExpand={handleOpenModal} />
-                    </div>
-                  </div>
-                )}
-               </>
+          {/* COLUMNA 2: Descrición Técnica */}
+          <div style={{ borderRight: '1px solid var(--border-color)', paddingRight: '0.6rem' }}>
+            <strong style={{ display: 'block', fontSize: '0.55rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>Descrición Técnica</strong>
+            {item.texto ? (
+              <div style={{ fontSize: '0.75rem', lineHeight: '1.2' }}>
+                <ExpandableText text={item.texto} maxLines={6} onExpand={handleOpenModal} />
+              </div>
             ) : (
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', opacity: 0.5, fontSize: '0.7rem' }}>
-                  Sen descrición técnica
-                </div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.4, fontStyle: 'italic', height: '100%', display: 'flex', alignItems: 'center' }}>
+                Sen descrición técnica
+              </div>
             )}
           </div>
 
-          {/* COLUMNA 3: Tiempo y Chincheta */}
-          <div style={{ flex: '0 0 auto', minWidth: '120px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem' }}>
-            
+          {/* COLUMNA 3: Observacións */}
+          <div style={{ borderRight: '1px solid var(--border-color)', paddingRight: '0.6rem' }}>
+            <strong style={{ display: 'block', fontSize: '0.55rem', textTransform: 'uppercase', color: '#3b82f6', marginBottom: '0.3rem' }}>Observacións</strong>
+            {obsVal ? (
+              <div style={{ fontSize: '0.75rem', lineHeight: '1.2' }}>
+                <ExpandableText text={obsVal} maxLines={6} onExpand={handleOpenModal} />
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.4, fontStyle: 'italic', height: '100%', display: 'flex', alignItems: 'center' }}>
+                Sen observacións
+              </div>
+            )}
+          </div>
+
+          {/* COLUMNA 4: Tiempo y Ubicación */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', width: '100%', alignItems: 'center' }}>
-              {/* Tiempo */}
               <div style={{ 
                 fontSize: '0.85rem', fontWeight: '900', color: timeColor, 
                 display: 'flex', flexDirection: 'column', gap: '0.1rem', 
@@ -231,7 +251,6 @@ export default function JobCard({
                  {!!item.tiempo_previsto && <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}>Est: {estTimeVal}</span>}
               </div>
 
-              {/* Chincheta y Localidad */}
               {item.localidad && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: 'var(--text-secondary)', width: '100%', justifyContent: 'center' }}>
                    {mapsUrl ? (
@@ -241,12 +260,11 @@ export default function JobCard({
                    ) : (
                       <MapPin size={18} style={{ color: 'gray' }} />
                    )}
-                   <span style={{ fontWeight: '500' }}>{item.localidad}</span>
+                   <span style={{ fontWeight: '500', textAlign: 'center' }}>{item.localidad}</span>
                 </div>
               )}
             </div>
 
-            {/* Botón Ver Ficha Completa integrado en la columna 3 */}
             <button 
               onClick={handleOpenModal}
               style={{
@@ -282,7 +300,6 @@ export default function JobCard({
               Ficha <ChevronRight size={12} />
             </button>
           </div>
-
         </div>
 
         {/* --- FILA 2: Imágenes (Horizontal scroll) --- */}
@@ -294,6 +311,7 @@ export default function JobCard({
               onMouseLeave={handleMouseLeave}
               onMouseUp={handleMouseUp}
               onMouseMove={handleMouseMove}
+              onScroll={checkScroll}
               style={{ 
                 display: 'flex', 
                 gap: '0.6rem', 
@@ -353,8 +371,8 @@ export default function JobCard({
                 </div>
               ))}
             </div>
-            {/* Indicador de más fotos a la derecha */}
-            {photos.length > 3 && (
+            {/* Indicador de más fotos a la derecha (solo si hay scroll real) */}
+            {showScrollArrow && (
               <div style={{
                 position: 'absolute',
                 right: 0,
@@ -366,7 +384,9 @@ export default function JobCard({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-end',
-                paddingRight: '4px'
+                paddingRight: '4px',
+                zIndex: 5,
+                transition: 'opacity 0.3s ease'
               }}>
                 <ChevronRight size={16} color="var(--brand-orange)" style={{ filter: 'drop-shadow(0 0 2px white)' }} />
               </div>
