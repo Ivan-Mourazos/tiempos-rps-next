@@ -32,3 +32,6 @@ yarn-error.log*
 .env.production.local
 .agents/
 .claude/
+.gemini/
+scratch/
+.system_generated/

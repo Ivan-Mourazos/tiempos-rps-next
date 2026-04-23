@@ -78,7 +78,7 @@ async function getMetadata() {
 }
 
 // Columnas principales y datos extendidos vía JOIN (Dirección Completa y Pre-aviso)
-const SQL_COLUMNS = "m.aviso, m.cliente, m.local, m.localidad, m.Telefono1, m.Telefono2, m.fecha, m.hora, m.tiempo_total, m.tiempo_previsto, m.comercial, m.abreviatura, m.tipo, m.prioridad, m.texto, m.observaciones, m.gps, m.foto1, m.foto2, m.foto3, m.foto4, m.solucion, m.asistencia, d.DireccionCliente, d.TelefonoPreavisoCliente, d.LocalidadCliente, c.ZipCode, s.Description as Provincia";
+const SQL_COLUMNS = "m.aviso, ISNULL(m.cliente, ISNULL(c2.Description, ISNULL(p2.CompanyName, p3.CompanyName))) as cliente, m.local, m.localidad, m.Telefono1, m.Telefono2, m.fecha, m.hora, m.tiempo_total, m.tiempo_previsto, m.comercial, m.abreviatura, m.tipo, m.prioridad, m.texto, m.observaciones, m.gps, m.foto1, m.foto2, m.foto3, m.foto4, m.solucion, m.asistencia, d.DireccionCliente, d.TelefonoPreavisoCliente, d.LocalidadCliente, c.ZipCode, s.Description as Provincia";
 
 // Componente que carga los datos de la lista (Board)
 async function JobBoard({ filters, limit }) {
@@ -91,6 +91,11 @@ async function JobBoard({ filters, limit }) {
                  LEFT JOIN TGM_ORDENES_MANTENIMIENTO_DIA d WITH (NOLOCK) ON m.asistencia = d.CodOrdenMantenimiento 
                  LEFT JOIN FACCustomer c WITH (NOLOCK) ON d.CodCliente = c.CodCustomer AND d.CodCompany = c.CodCompany
                  LEFT JOIN GENState s WITH (NOLOCK) ON c.IDState = s.IDState
+                 LEFT JOIN MANMaintenanceWarning w WITH (NOLOCK) ON m.aviso = w.MaintenanceWarningCode
+                 LEFT JOIN _MANMaintenanceWarning_Custom wc WITH (NOLOCK) ON w.IDMaintenanceWarning = wc.IDMaintenanceWarning
+                 LEFT JOIN FACCustomer c2 WITH (NOLOCK) ON wc.IDCliente = c2.IDCustomer
+                 LEFT JOIN FACPotentialCustomerSL p2 WITH (NOLOCK) ON wc.IDCliente = p2.IDPotentialCustomer
+                 LEFT JOIN FACPotentialCustomerSL p3 WITH (NOLOCK) ON wc.IDClientePotencial = p3.IDPotentialCustomer
                  WHERE 1=1`;
     const request = pool.request();
 
@@ -110,7 +115,7 @@ async function JobBoard({ filters, limit }) {
       const palabras = cliente.trim().split(/\s+/).filter(Boolean);
       query += ` AND (${palabras.map((p, i) => {
         request.input(`cliente${i}`, `%${p}%`);
-        return `m.cliente LIKE @cliente${i}`;
+        return `(m.cliente LIKE @cliente${i} OR c2.Description LIKE @cliente${i} OR p2.CompanyName LIKE @cliente${i} OR p3.CompanyName LIKE @cliente${i})`;
       }).join(' AND ')} OR m.aviso LIKE @clienteFull OR m.comercial LIKE @clienteFull)`;
       request.input('clienteFull', `%${cliente}%`);
     }
