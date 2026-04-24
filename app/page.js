@@ -48,11 +48,32 @@ async function getDbConnection() {
 }
 
 // Fetch de metadatos (Tecnicos, Prioridades, etc)
-async function getMetadata() {
+async function getMetadata(filters = {}) {
+  const { fechaInicio, fechaFin } = filters;
   try {
     const pool = await getDbConnection();
+    
+    // Consulta de tecnicos dinamica segun fechas
+    let tecQuery = `SELECT DISTINCT 
+                    ISNULL(NULLIF(CAST(abreviatura AS VARCHAR(100)), ''), comercial) as abreviatura, 
+                    comercial 
+                    FROM tgm_monitorizacion WITH (NOLOCK) 
+                    WHERE ((abreviatura IS NOT NULL AND abreviatura != '') OR (comercial IS NOT NULL AND comercial != ''))`;
+    
+    const tecRequest = pool.request();
+    if (fechaInicio) {
+      tecQuery += ' AND fecha >= @fIni';
+      tecRequest.input('fIni', fechaInicio);
+    }
+    const effectiveFechaFin = fechaFin || (fechaInicio ? fechaInicio : null);
+    if (effectiveFechaFin) {
+      tecQuery += ' AND fecha < DATEADD(day, 1, @fFin)';
+      tecRequest.input('fFin', effectiveFechaFin);
+    }
+    tecQuery += ' ORDER BY comercial';
+
     const [rTecnicos, rPrioridades] = await Promise.all([
-      pool.request().query("SELECT DISTINCT abreviatura, comercial FROM tgm_monitorizacion WITH (NOLOCK) WHERE abreviatura IS NOT NULL AND abreviatura != '' ORDER BY abreviatura"),
+      tecRequest.query(tecQuery),
       pool.request().query("SELECT DISTINCT prioridad FROM tgm_monitorizacion WITH (NOLOCK) WHERE prioridad IS NOT NULL ORDER BY prioridad")
     ]);
     
@@ -64,6 +85,7 @@ async function getMetadata() {
       full: r.comercial ? String(r.comercial).trim() : '' 
     }));
 
+    // El sort ya viene por comercial de la query, pero mantenemos por seguridad
     allTecnicos.sort((a, b) => (a.full || a.abbr).localeCompare(b.full || b.abbr));
 
     return {
@@ -183,6 +205,18 @@ async function JobBoard({ filters, limit }) {
           if (!photosMap[key]) photosMap[key] = [];
           photosMap[key].push(row.foto);
         });
+
+        // Sort photos by the number in the filename (e.g., _1.jpg, _2.jpg)
+        Object.keys(photosMap).forEach(key => {
+          photosMap[key].sort((a, b) => {
+            const getNum = (str) => {
+              // Extract the last number before the extension (e.g. _1.jpg -> 1)
+              const match = String(str).match(/_(\d+)\.[^.]+$/);
+              return match ? parseInt(match[1], 10) : 999;
+            };
+            return getNum(a) - getNum(b);
+          });
+        });
       } catch (photoError) {
         console.error("Error fetching photos from TGM_MONITORIZACION_FOTOS:", photoError.message);
         // Fallback: photosMap will be empty, will use legacy columns
@@ -295,7 +329,7 @@ export default async function Page({ searchParams }) {
   };
 
   // El metadata lo cargamos de forma asíncrona también para no bloquear el esqueleto base
-  const metadataPromise = getMetadata();
+  const metadataPromise = getMetadata(filters);
 
   return (
     <div className="dashboard-container">

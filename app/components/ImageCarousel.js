@@ -7,6 +7,12 @@ import { createPortal } from 'react-dom';
 export default function ImageCarousel({ images, initialIndex = 0, isFullScreenOnly = false, onClose }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isFullscreen, setIsFullscreen] = useState(isFullScreenOnly);
+  
+  // Estados para Zoom y Pan
+  const [scale, setScale] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
 
   // Sync internal state with props if they change externally
   useEffect(() => {
@@ -29,13 +35,64 @@ export default function ImageCarousel({ images, initialIndex = 0, isFullScreenOn
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') handleClose();
-      if (e.key === 'ArrowLeft') setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
-      if (e.key === 'ArrowRight') setCurrentIndex((prev) => (prev + 1) % images.length);
+      if (scale === 1) { // Solo permitir cambiar imagen si no hay zoom
+        if (e.key === 'ArrowLeft') setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+        if (e.key === 'ArrowRight') setCurrentIndex((prev) => (prev + 1) % images.length);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFullscreen, images.length]);
+  }, [isFullscreen, images.length, scale]);
+
+  // Reset zoom when image changes or closing
+  useEffect(() => {
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+  }, [currentIndex, isFullscreen]);
+
+  // Bloquear scroll del body cuando está en pantalla completa
+  useEffect(() => {
+    if (isFullscreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isFullscreen]);
+
+  const handleWheel = (e) => {
+    if (!isFullscreen) return;
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.2 : 0.2;
+    const newScale = Math.max(1, Math.min(5, scale + delta));
+    setScale(newScale);
+    if (newScale === 1) setPosition({ x: 0, y: 0 });
+  };
+
+  const startPanning = (e) => {
+    if (!isFullscreen || scale <= 1) return;
+    setIsPanning(true);
+    setLastMousePos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handlePanning = (e) => {
+    if (!isPanning) return;
+    const dx = e.clientX - lastMousePos.x;
+    const dy = e.clientY - lastMousePos.y;
+    // Ajustamos la velocidad de movimiento según el zoom
+    setPosition(prev => ({ 
+      x: prev.x + dx / scale, 
+      y: prev.y + dy / scale 
+    }));
+    setLastMousePos({ x: e.clientX, y: e.clientY });
+  };
+
+  const stopPanning = () => {
+    setIsPanning(false);
+  };
 
   if (!images || images.length === 0) return null;
 
@@ -82,15 +139,24 @@ export default function ImageCarousel({ images, initialIndex = 0, isFullScreenOn
       <img
         src={imageUrl}
         alt={`Imagen ${currentIndex + 1}`}
+        onWheel={handleWheel}
+        onMouseDown={startPanning}
+        onMouseMove={handlePanning}
+        onMouseUp={stopPanning}
+        onMouseLeave={stopPanning}
+        draggable={false}
         style={{
           maxWidth: '100%',
           maxHeight: '100%',
           width: fullscreen ? 'auto' : '100%',
           height: fullscreen ? 'auto' : '100%',
           objectFit: fullscreen ? 'contain' : 'cover',
-          transition: 'opacity 0.3s',
+          transition: isPanning ? 'none' : 'opacity 0.3s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
           zIndex: 10,
-          boxShadow: fullscreen ? '0 10px 50px rgba(0,0,0,0.5)' : 'none'
+          boxShadow: fullscreen ? '0 10px 50px rgba(0,0,0,0.5)' : 'none',
+          transform: fullscreen ? `scale(${scale}) translate(${position.x}px, ${position.y}px)` : 'none',
+          cursor: fullscreen ? (scale > 1 ? (isPanning ? 'grabbing' : 'grab') : 'default') : 'zoom-in',
+          touchAction: 'none'
         }}
       />
       
@@ -190,15 +256,40 @@ export default function ImageCarousel({ images, initialIndex = 0, isFullScreenOn
         </div>
       )}
 
+      {/* Mini Name (only when not fullscreen) */}
+      {!fullscreen && (
+        <div style={{ 
+          position: 'absolute', top: 0, left: 0, right: 0, 
+          padding: '8px 12px',
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)',
+          zIndex: 30,
+          pointerEvents: 'none'
+        }}>
+          <span style={{ 
+            fontSize: '0.65rem', 
+            fontWeight: '600', 
+            color: 'white',
+            textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+            display: 'block',
+            maxWidth: '85%',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>
+            {imageName}
+          </span>
+        </div>
+      )}
+
       {/* Mini Maximizar Icon (only when not fullscreen) */}
       {!fullscreen && (
-        <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 30 }}>
+        <div style={{ position: 'absolute', top: '8px', right: '10px', zIndex: 30 }}>
           <div style={{
             background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '4px', 
-            width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+            width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', 
             opacity: 0.8
           }}>
-            <Maximize2 size={16} />
+            <Maximize2 size={14} />
           </div>
         </div>
       )}

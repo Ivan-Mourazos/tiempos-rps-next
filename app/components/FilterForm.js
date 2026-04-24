@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useTransition, useRef, useState } from 'react';
+import { Calendar, Trash2 } from 'lucide-react';
 
 export default function FilterForm({ filters, metadata, tipoLabels }) {
   const router = useRouter();
@@ -33,9 +34,10 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
 
   function handleClear() {
     if (formRef.current) {
+      const today = new Date().toISOString().split('T')[0];
       const form = formRef.current;
       form.tecnico.value = 'TODOS';
-      form.fechaInicio.value = '';
+      form.fechaInicio.value = today;
       form.fechaFin.value = '';
       form.tipo.value = 'TODOS';
       form.prioridad.value = 'TODAS';
@@ -85,35 +87,45 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
         </select>
       </div>
       <div style={{ flex: '0 0 120px' }}>
-        <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>📅 Dende</label>
+        <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem', display: 'flex', alignItems: 'center', gap: '0.2rem'}}>
+          <Calendar size={10} /> DENDE
+        </label>
         <div style={{ position: 'relative' }}>
           <input
             type="date"
             name="fechaInicio"
             defaultValue={filters.fechaInicio}
             id="fechaInicio"
-            style={{width: '100%', padding: '0.3rem', paddingRight: '1.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem', cursor: 'pointer'}}
+            onClick={(e) => e.target.showPicker()}
+            style={{width: '100%', padding: '0.3rem', paddingRight: '1.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem', cursor: 'pointer', outline: 'none'}}
           />
           <span
             onClick={() => togglePicker('fechaInicio')}
-            style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', fontSize: '0.9rem', pointerEvents: 'all', userSelect: 'none', zIndex: 10 }}
-          >📅</span>
+            style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--brand-orange)', pointerEvents: 'none' }}
+          >
+            <Calendar size={14} />
+          </span>
         </div>
       </div>
       <div style={{ flex: '0 0 120px' }}>
-        <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem'}}>📅 Ata</label>
+        <label style={{display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem', display: 'flex', alignItems: 'center', gap: '0.2rem'}}>
+          <Calendar size={10} /> ATA
+        </label>
         <div style={{ position: 'relative' }}>
           <input
             type="date"
             name="fechaFin"
             defaultValue={filters.fechaFin}
             id="fechaFin"
-            style={{width: '100%', padding: '0.3rem', paddingRight: '1.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem', cursor: 'pointer'}}
+            onClick={(e) => e.target.showPicker()}
+            style={{width: '100%', padding: '0.3rem', paddingRight: '1.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem', cursor: 'pointer', outline: 'none'}}
           />
           <span
             onClick={() => togglePicker('fechaFin')}
-            style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', fontSize: '0.9rem', pointerEvents: 'all', userSelect: 'none', zIndex: 10 }}
-          >📅</span>
+            style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--brand-orange)', pointerEvents: 'none' }}
+          >
+            <Calendar size={14} />
+          </span>
         </div>
       </div>
       <div style={{ flex: '1 1 140px' }}>
@@ -143,7 +155,9 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
         <input type="text" name="telefono" defaultValue={filters.telefono} placeholder="Tlf..." style={{width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem'}} />
       </div>
       <div style={{ display: 'flex', gap: '0.2rem' }}>
-        <button type="button" onClick={handleClear} style={{ padding: '0.4rem 0.6rem', background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', fontSize: '0.6rem', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>LIMPIAR FILTROS</button>
+        <button type="button" onClick={handleClear} style={{ padding: '0.4rem 0.6rem', background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', fontSize: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = '#ef4444'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border-color)'; }}>
+          <Trash2 size={12} /> LIMPIAR
+        </button>
       </div>
     </form>
   );

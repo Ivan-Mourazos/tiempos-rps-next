@@ -158,3 +158,15 @@ h1, h2, h3, h4, h5, h6 {
     padding: 1rem;
   }
 }
+
+/* Ocultar el icono nativo de calendario para evitar el efecto de "dos calendarios" */
+/* Esto permite usar nuestro propio icono personalizado mediante showPicker() */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
+/* Para navegadores que no soportan display: none en el indicator */
+input[type="date"] {
+  position: relative;
+}
