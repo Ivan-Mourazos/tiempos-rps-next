@@ -6,6 +6,7 @@ import { Clock, Calendar, User, MapPin, Phone, ImageOff, ExternalLink, ChevronRi
 import ExpandableText from './ExpandableText';
 import JobModal from './JobModal';
 import ImageCarousel from './ImageCarousel';
+import PdfModal from './PdfModal';
 
 export default function JobCard({ 
   item, index, timeVal, estTimeVal, solutionVal, 
@@ -15,6 +16,7 @@ export default function JobCard({
   zipCode, provincia, localidadCliente
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
@@ -267,10 +269,11 @@ export default function JobCard({
 
             <div style={{ display: 'flex', gap: '0.4rem', width: '100%', marginTop: 'auto' }}>
               {item.pedido && (
-                <a 
-                  href={item.pedido} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsPdfModalOpen(true);
+                  }}
                   style={{
                     flex: 1,
                     background: 'var(--brand-orange)',
@@ -285,7 +288,6 @@ export default function JobCard({
                     gap: '0.3rem',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
-                    textDecoration: 'none',
                     justifyContent: 'center'
                   }}
                   onMouseEnter={(e) => {
@@ -296,7 +298,7 @@ export default function JobCard({
                   }}
                 >
                   <FileText size={12} /> Pedido
-                </a>
+                </button>
               )}
               <button 
                 onClick={handleOpenModal}
@@ -460,6 +462,14 @@ export default function JobCard({
                 initialIndex={selectedImageIndex} 
                 isFullScreenOnly={true} 
                 onClose={() => setIsLightboxOpen(false)} 
+              />
+            )}
+            {isPdfModalOpen && (
+              <PdfModal 
+                isOpen={true} 
+                onClose={() => setIsPdfModalOpen(false)} 
+                pdfUrl={item.pedido}
+                title={item.aviso}
               />
             )}
           </>,

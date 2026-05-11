@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { X, Clock, MapPin, Phone, Calendar, User, FileText } from 'lucide-react';
 import ImageCarousel from './ImageCarousel';
+import PdfModal from './PdfModal';
 
 export default function JobModal({ 
   isOpen, onClose, item, photos, gpsParts, avisoCompleto, tecnicoVal, 
@@ -11,6 +12,7 @@ export default function JobModal({
   zipCode, provincia, localidadCliente
 }) {
   const [mounted, setMounted] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -85,10 +87,8 @@ export default function JobModal({
           </div>
           <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
             {item.pedido && (
-              <a 
-                href={item.pedido} 
-                target="_blank" 
-                rel="noopener noreferrer"
+              <button 
+                onClick={() => setIsPdfModalOpen(true)}
                 style={{
                   background: 'var(--brand-orange)',
                   color: 'white',
@@ -102,7 +102,6 @@ export default function JobModal({
                   gap: '0.4rem',
                   cursor: 'pointer',
                   transition: 'all 0.2s',
-                  textDecoration: 'none',
                   boxShadow: '0 2px 4px rgba(234, 88, 12, 0.2)'
                 }}
                 onMouseEnter={(e) => {
@@ -115,7 +114,7 @@ export default function JobModal({
                 }}
               >
                 <FileText size={18} /> PEDIDO
-              </a>
+              </button>
             )}
             <button onClick={onClose} style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', cursor: 'pointer', color: 'var(--text-secondary)', padding: '0.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} aria-label="Cerrar modal">
               <X size={20} />
@@ -225,6 +224,14 @@ export default function JobModal({
            <div style={{ paddingBottom: '3rem' }}></div>
         </div>
       </div>
+      {isPdfModalOpen && (
+         <PdfModal 
+           isOpen={true} 
+           onClose={() => setIsPdfModalOpen(false)} 
+           pdfUrl={item.pedido}
+           title={item.aviso}
+         />
+      )}
     </div>
   );
 }
