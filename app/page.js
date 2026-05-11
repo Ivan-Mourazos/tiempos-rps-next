@@ -227,10 +227,21 @@ async function JobBoard({ filters, limit }) {
     
     if (asistencias.length > 0) {
       try {
-        // Query the new view for all photos related to these asistencias
-        const photoResult = await pool.request()
-          .query(`SELECT asistencia, foto FROM TGM_MONITORIZACION_FOTOS WITH (NOLOCK) WHERE asistencia IN (${asistencias.map(a => `'${String(a).trim()}'`).join(',')})`);
-        
+        // Construimos parámetros @a0, @a1, ... uno por asistencia.
+        // Patrón parametrizado: evita inyección SQL y soporta valores con caracteres especiales
+        // (comillas, espacios, etc.) sin romper la query.
+        const photoRequest = pool.request();
+        const placeholders = asistencias.map((value, idx) => {
+          const paramName = `a${idx}`;
+          photoRequest.input(paramName, String(value).trim());
+          return `@${paramName}`;
+        });
+
+        const photoResult = await photoRequest.query(
+          `SELECT asistencia, foto FROM TGM_MONITORIZACION_FOTOS WITH (NOLOCK) 
+           WHERE asistencia IN (${placeholders.join(', ')})`
+        );
+
         const photoRecords = photoResult.recordset || [];
         
         // Group photos by asistencia
