@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Clock, Calendar, User, MapPin, Phone, ImageOff, ExternalLink, ChevronRight } from 'lucide-react';
+import { Clock, Calendar, User, MapPin, Phone, ImageOff, ExternalLink, ChevronRight, FileText } from 'lucide-react';
 import ExpandableText from './ExpandableText';
 import JobModal from './JobModal';
 import ImageCarousel from './ImageCarousel';
@@ -265,40 +265,73 @@ export default function JobCard({
               )}
             </div>
 
-            <button 
-              onClick={handleOpenModal}
-              style={{
-                background: 'var(--surface-color)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '6px',
-                padding: '0.3rem 0.6rem',
-                fontSize: '0.65rem',
-                fontWeight: '600',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.2rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                pointerEvents: 'auto',
-                width: '100%',
-                justifyContent: 'center',
-                marginTop: 'auto'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--brand-orange)';
-                e.currentTarget.style.color = 'white';
-                e.currentTarget.style.borderColor = 'var(--brand-orange)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'var(--surface-color)';
-                e.currentTarget.style.color = 'var(--text-primary)';
-                e.currentTarget.style.borderColor = 'var(--border-color)';
-              }}
-            >
-              Ficha <ChevronRight size={12} />
-            </button>
+            <div style={{ display: 'flex', gap: '0.4rem', width: '100%', marginTop: 'auto' }}>
+              {item.pedido && (
+                <a 
+                  href={item.pedido} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{
+                    flex: 1,
+                    background: 'var(--brand-orange)',
+                    color: 'white',
+                    border: '1px solid var(--brand-orange)',
+                    borderRadius: '6px',
+                    padding: '0.3rem 0.6rem',
+                    fontSize: '0.65rem',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    textDecoration: 'none',
+                    justifyContent: 'center'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.opacity = '0.9';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.opacity = '1';
+                  }}
+                >
+                  <FileText size={12} /> Pedido
+                </a>
+              )}
+              <button 
+                onClick={handleOpenModal}
+                style={{
+                  flex: 1,
+                  background: 'var(--surface-color)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '6px',
+                  padding: '0.3rem 0.6rem',
+                  fontSize: '0.65rem',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.2rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                  pointerEvents: 'auto',
+                  justifyContent: 'center'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--brand-orange)';
+                  e.currentTarget.style.color = 'white';
+                  e.currentTarget.style.borderColor = 'var(--brand-orange)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'var(--surface-color)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                  e.currentTarget.style.borderColor = 'var(--border-color)';
+                }}
+              >
+                Ficha <ChevronRight size={12} />
+              </button>
+            </div>
           </div>
         </div>
 

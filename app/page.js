@@ -27,10 +27,11 @@ const TIPO_LABELS = {
   'VT': 'Visitas',
   'TP': 'Trabajo previo',
   'AS': 'Asistencias',
-  'IN': 'Recados'
+  'IN': 'Recados',
+  'COT': 'Consulta con OT'
 };
 
-const TIPOS_ORDEN = ['PM', 'GC', 'VT', 'TP', 'AS', 'IN'];
+const TIPOS_ORDEN = ['PM', 'GC', 'VT', 'TP', 'AS', 'IN', 'COT'];
 
 // Pool de conexión global
 async function getDbConnection() {
@@ -100,7 +101,7 @@ async function getMetadata(filters = {}) {
 }
 
 // Columnas principales y datos extendidos vía JOIN (Dirección Completa y Pre-aviso)
-const SQL_COLUMNS = "m.aviso, ISNULL(m.cliente, ISNULL(c2.Description, ISNULL(p2.CompanyName, p3.CompanyName))) as cliente, m.local, m.localidad, m.Telefono1, m.Telefono2, m.fecha, m.hora, m.tiempo_total, m.tiempo_previsto, m.comercial, m.abreviatura, m.tipo, m.prioridad, m.texto, m.observaciones, m.gps, m.foto1, m.foto2, m.foto3, m.foto4, m.solucion, m.asistencia, d.DireccionCliente, d.TelefonoPreavisoCliente, d.LocalidadCliente, c.ZipCode, s.Description as Provincia";
+const SQL_COLUMNS = "m.aviso, ISNULL(m.cliente, ISNULL(c2.Description, ISNULL(p2.CompanyName, p3.CompanyName))) as cliente, m.local, m.localidad, m.Telefono1, m.Telefono2, m.fecha, m.hora, m.tiempo_total, m.tiempo_previsto, m.comercial, m.abreviatura, m.tipo, m.prioridad, m.texto, m.observaciones, m.gps, m.foto1, m.foto2, m.foto3, m.foto4, m.solucion, m.asistencia, d.DireccionCliente, d.TelefonoPreavisoCliente, d.LocalidadCliente, c.ZipCode, s.Description as Provincia, m.pedido";
 
 // Componente que carga los datos de la lista (Board)
 async function JobBoard({ filters, limit }) {

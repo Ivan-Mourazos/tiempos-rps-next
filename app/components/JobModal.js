@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Clock, MapPin, Phone, Calendar, User } from 'lucide-react';
+import { X, Clock, MapPin, Phone, Calendar, User, FileText } from 'lucide-react';
 import ImageCarousel from './ImageCarousel';
 
 export default function JobModal({ 
@@ -83,9 +83,44 @@ export default function JobModal({
                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: 'var(--text-secondary)' }}><Calendar size={16} /> {formattedDate}</span>
              </div>
           </div>
-          <button onClick={onClose} style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', cursor: 'pointer', color: 'var(--text-secondary)', padding: '0.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} aria-label="Cerrar modal">
-            <X size={20} />
-          </button>
+          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+            {item.pedido && (
+              <a 
+                href={item.pedido} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{
+                  background: 'var(--brand-orange)',
+                  color: 'white',
+                  border: '1px solid var(--brand-orange)',
+                  borderRadius: '6px',
+                  padding: '0.4rem 1rem',
+                  fontSize: '0.8rem',
+                  fontWeight: '700',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  textDecoration: 'none',
+                  boxShadow: '0 2px 4px rgba(234, 88, 12, 0.2)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(234, 88, 12, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(234, 88, 12, 0.2)';
+                }}
+              >
+                <FileText size={18} /> PEDIDO
+              </a>
+            )}
+            <button onClick={onClose} style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', cursor: 'pointer', color: 'var(--text-secondary)', padding: '0.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} aria-label="Cerrar modal">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
