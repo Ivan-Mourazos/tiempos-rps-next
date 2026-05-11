@@ -23,7 +23,7 @@ html.dark {
   --bg-color: #2d2a2e;
   --surface-color: #403e41;
   --text-primary: #fcfcfa;
-  --text-secondary: #939293;
+  --text-secondary: #b8b6b8;
   --border-color: #5b595c;
   
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
@@ -157,6 +157,65 @@ h1, h2, h3, h4, h5, h6 {
   .header {
     padding: 1rem;
   }
+}
+
+/* ===== Empty State ===== */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.empty-state-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.empty-state-hint {
+  font-size: 0.9rem;
+}
+
+.empty-state-action {
+  margin-top: 1rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.6rem 1.4rem;
+  background: var(--brand-orange);
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: var(--shadow-sm);
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.empty-state-action:hover {
+  background: var(--brand-orange-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ===== Error Banner ===== */
+.error-banner {
+  padding: 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+  border-radius: var(--radius-md);
+  color: #ef4444;
+}
+
+/* ===== Filter Placeholder (mientras carga el metadata) ===== */
+.filter-placeholder {
+  height: 40px;
+  background: var(--surface-color);
+  opacity: 0.5;
+  border-radius: 6px;
 }
 
 /* Ocultar el icono nativo de calendario para evitar el efecto de "dos calendarios" */

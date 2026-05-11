@@ -1,10 +1,11 @@
 import sql from 'mssql';
+import Link from 'next/link';
 import { Suspense } from 'react';
 import ThemeToggle from './components/ThemeToggle';
 import FilterForm from './components/FilterForm';
 import AutoRefresh from './components/AutoRefresh';
 import JobCard from './components/JobCard';
-import JobCardSkeleton from './components/JobCardSkeleton';
+import LoadingState from './components/LoadingState';
 import LoadMore from './components/LoadMore';
 import ScrollToTop from './components/ScrollToTop';
 
@@ -100,8 +101,37 @@ async function getMetadata(filters = {}) {
   }
 }
 
-// Columnas principales y datos extendidos vía JOIN (Dirección Completa y Pre-aviso)
-const SQL_COLUMNS = "m.aviso, ISNULL(m.cliente, ISNULL(c2.Description, ISNULL(p2.CompanyName, p3.CompanyName))) as cliente, m.local, m.localidad, m.Telefono1, m.Telefono2, m.fecha, m.hora, m.tiempo_total, m.tiempo_previsto, m.comercial, m.abreviatura, m.tipo, m.prioridad, m.texto, m.observaciones, m.gps, m.foto1, m.foto2, m.foto3, m.foto4, m.solucion, m.asistencia, d.DireccionCliente, d.TelefonoPreavisoCliente, d.LocalidadCliente, c.ZipCode, s.Description as Provincia, m.pedido";
+// Columnas SELECT organizadas por origen/JOIN.
+// IMPORTANTE: el orden y los alias no se pueden cambiar — el ORM no es estricto
+// pero algunos componentes leen propiedades por nombre exacto (ej: item.Provincia).
+const SQL_COLUMN_GROUPS = {
+  // Campos base de la tabla principal tgm_monitorizacion (alias m)
+  monitorizacion: [
+    'm.aviso',
+    // Cliente: fallback en cascada — primero el campo directo, luego desde el warning,
+    // luego desde los clientes potenciales (2 origenes distintos)
+    'ISNULL(m.cliente, ISNULL(c2.Description, ISNULL(p2.CompanyName, p3.CompanyName))) as cliente',
+    'm.local', 'm.localidad', 'm.Telefono1', 'm.Telefono2',
+    'm.fecha', 'm.hora', 'm.tiempo_total', 'm.tiempo_previsto',
+    'm.comercial', 'm.abreviatura', 'm.tipo', 'm.prioridad',
+    'm.texto', 'm.observaciones', 'm.gps',
+    'm.foto1', 'm.foto2', 'm.foto3', 'm.foto4',
+    'm.solucion', 'm.asistencia',
+  ],
+  // Datos extendidos desde TGM_ORDENES_MANTENIMIENTO_DIA (alias d): dirección y preaviso
+  ordenDia: [
+    'd.DireccionCliente', 'd.TelefonoPreavisoCliente', 'd.LocalidadCliente',
+  ],
+  // FACCustomer (c) + GENState (s): código postal y provincia textual
+  ubicacion: [
+    'c.ZipCode',
+    's.Description as Provincia',
+  ],
+  // Pedido (al final por compatibilidad con el orden histórico de la query)
+  extras: ['m.pedido'],
+};
+
+const SQL_COLUMNS = Object.values(SQL_COLUMN_GROUPS).flat().join(', ');
 
 // Componente que carga los datos de la lista (Board)
 async function JobBoard({ filters, limit }) {
@@ -181,9 +211,12 @@ async function JobBoard({ filters, limit }) {
 
     if (dbData.length === 0) {
       return (
-        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-          <p style={{ fontSize: '1.2rem', fontWeight: '600' }}>Non hay datos para esta selección.</p>
-          <p style={{ fontSize: '0.9rem' }}>Proba a cambiar os filtros ou as fechas.</p>
+        <div className="empty-state">
+          <p className="empty-state-title">Non hay datos para esta selección.</p>
+          <p className="empty-state-hint">Proba a cambiar os filtros ou as fechas.</p>
+          <Link href="/" className="empty-state-action">
+            Volver á vista de hoxe
+          </Link>
         </div>
       );
     }
@@ -240,7 +273,7 @@ async function JobBoard({ filters, limit }) {
     );
   } catch (error) {
     return (
-      <div style={{ padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: '8px', color: '#ef4444' }}>
+      <div className="error-banner" role="alert">
         <strong>⚠️ Error al cargar los registros:</strong> {error.message}
       </div>
     );
@@ -342,22 +375,16 @@ export default async function Page({ searchParams }) {
         </div>
         
         {/* Los filtros aparecen en cuanto el metadata está listo, pero no bloquean el resto */}
-        <Suspense fallback={<div style={{ height: '40px', background: 'var(--surface-color)', opacity: 0.5, borderRadius: '6px' }} />}>
+        <Suspense fallback={<div className="filter-placeholder" aria-hidden="true" />}>
           <FilterWrapper filters={filters} metadataPromise={metadataPromise} />
         </Suspense>
       </header>
 
       <main className="main-content" style={{ padding: '0.5rem 1rem' }}>
-        {/* El tablero de trabajos se carga en streaming. Usamos una key única para forzar el skeleton al filtrar */}
+        {/* El tablero se carga en streaming. La key única fuerza el fallback al cambiar filtros */}
         <Suspense 
           key={JSON.stringify({...filters, limit})}
-          fallback={
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.6rem' }}>
-              <JobCardSkeleton />
-              <JobCardSkeleton />
-              <JobCardSkeleton />
-            </div>
-          }
+          fallback={<LoadingState message="Cargando datos" />}
         >
           <JobBoard filters={filters} limit={limit} />
         </Suspense>

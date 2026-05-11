@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { MiniSpinner } from './LoadingState';
 
 export default function LoadMore({ currentLimit }) {
   const router = useRouter();
@@ -49,7 +50,7 @@ export default function LoadMore({ currentLimit }) {
       >
         {isLoading ? (
           <>
-            <span className="spinner"></span>
+            <MiniSpinner size={16} />
             Cargando...
           </>
         ) : (
@@ -58,17 +59,6 @@ export default function LoadMore({ currentLimit }) {
       </button>
 
       <style jsx>{`
-        .spinner {
-          width: 1rem;
-          height: 1rem;
-          border: 2px solid rgba(255,255,255,0.3);
-          border-top-color: white;
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
         button:hover:not(:disabled) {
           background: var(--brand-orange-hover);
           transform: translateY(-2px);
