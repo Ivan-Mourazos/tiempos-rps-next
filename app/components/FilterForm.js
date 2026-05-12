@@ -1,14 +1,49 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useTransition, useRef, useState } from 'react';
+import { useTransition, useRef, useEffect } from 'react';
 import { Calendar, Trash2 } from 'lucide-react';
 
 export default function FilterForm({ filters, metadata, tipoLabels }) {
   const router = useRouter();
   const timeoutRef = useRef(null);
   const formRef = useRef(null);
-  const [formKey, setFormKey] = useState(Date.now());
+  // useTransition marca la navegación como "no urgente":
+  // React mantiene la UI anterior visible y expone `isPending` para feedback inmediato.
+  const [isPending, startTransition] = useTransition();
+
+  // Sincroniza los inputs del form con la prop `filters` cuando la URL cambia
+  // desde fuera (botón LIMPIAR, link "Volver á vista de hoxe", deep links, etc.).
+  // Sin esto, los inputs uncontrolled con defaultValue se quedan congelados
+  // en el valor del primer render aunque la URL diga otra cosa.
+  // Solo escribe si el valor difiere para no mover el cursor del usuario.
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form) return;
+
+    const syncInput = (name, expected) => {
+      const value = expected ?? '';
+      if (form[name] && form[name].value !== value) {
+        form[name].value = value;
+      }
+    };
+
+    syncInput('tecnico', filters.tecnico || 'TODOS');
+    syncInput('fechaInicio', filters.fechaInicio);
+    syncInput('fechaFin', filters.fechaFin);
+    syncInput('tipo', filters.tipo || 'TODOS');
+    syncInput('prioridad', filters.prioridad || 'TODAS');
+    syncInput('cliente', filters.cliente);
+    syncInput('telefono', filters.telefono);
+  }, [
+    filters.tecnico,
+    filters.fechaInicio,
+    filters.fechaFin,
+    filters.tipo,
+    filters.prioridad,
+    filters.cliente,
+    filters.telefono,
+  ]);
 
   function handleFormChange(e) {
     const form = e.currentTarget;
@@ -28,7 +63,12 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
         }
       }
 
-      router.push(`/?${searchParams.toString()}`);
+      // El push se envuelve en startTransition: el indicador `isPending` se
+      // activa inmediatamente (sin esperar al round-trip al servidor),
+      // dando feedback visual desde el primer click.
+      startTransition(() => {
+        router.push(`/?${searchParams.toString()}`);
+      });
     }, delay);
   }
 
@@ -44,7 +84,9 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
       form.cliente.value = '';
       form.telefono.value = '';
     }
-    router.push('/');
+    startTransition(() => {
+      router.push('/');
+    });
   }
 
   const togglePicker = (id) => {
@@ -60,8 +102,47 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
   };
 
   return (
+    <>
+      {/* Barra de progreso fija arriba: aparece INSTANTÁNEO al filtrar.
+          Feedback visual antes incluso de que el server responda. */}
+      {isPending && (
+        <div className="top-progress-bar" role="progressbar" aria-label="Cargando filtros">
+          <div className="top-progress-bar-fill" />
+          <style jsx>{`
+            .top-progress-bar {
+              position: fixed;
+              top: 0;
+              left: 0;
+              right: 0;
+              height: 3px;
+              z-index: 9999;
+              background: rgba(243, 112, 33, 0.15);
+              overflow: hidden;
+              pointer-events: none;
+            }
+            .top-progress-bar-fill {
+              position: absolute;
+              top: 0;
+              left: 0;
+              height: 100%;
+              width: 40%;
+              background: linear-gradient(
+                90deg,
+                transparent,
+                var(--brand-orange) 50%,
+                transparent
+              );
+              animation: top-bar-slide 1.2s ease-in-out infinite;
+            }
+            @keyframes top-bar-slide {
+              0% { transform: translateX(-100%); }
+              100% { transform: translateX(350%); }
+            }
+          `}</style>
+        </div>
+      )}
+
     <form 
-      key={formKey}
       ref={formRef}
       onChange={handleFormChange} 
       onSubmit={(e) => e.preventDefault()} 
@@ -74,7 +155,8 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
         borderRadius: '6px',
         border: '1px solid var(--border-color)',
         alignItems: 'flex-end',
-        transition: 'all 0.2s'
+        transition: 'all 0.2s',
+        opacity: isPending ? 0.7 : 1,
       }}
     >
       <div style={{ flex: '1 1 140px' }}>
@@ -160,5 +242,6 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
         </button>
       </div>
     </form>
+    </>
   );
 }
