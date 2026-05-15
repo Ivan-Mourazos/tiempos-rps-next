@@ -10,7 +10,7 @@ import PdfModal from './PdfModal';
 
 export default function JobCard({ 
   item, index, timeVal, estTimeVal, solutionVal, 
-  tecnicoVal, avisoCompleto, priorityVal, obsVal, 
+  tecnicoVal, avisoCompleto, obsVal, 
   timeColor, gpsParts, photos, isRealClientDifferent, formattedDate,
   asistencia, direccionCompleta, telefonoPreaviso,
   zipCode, provincia, localidadCliente
@@ -134,16 +134,6 @@ export default function JobCard({
         overflow: 'hidden',
         background: 'var(--bg-color)',
       }}>
-        {priorityVal === 1 && (
-          <span style={{ 
-            position: 'absolute', top: '0', left: '0', zIndex: 10, 
-            background: 'var(--brand-orange)', color: 'white', fontSize: '0.45rem', 
-            padding: '2px 6px', borderBottomRightRadius: '4px', fontWeight: '900' 
-          }}>
-            PRIORIDADE
-          </span>
-        )}
-
         {/* --- FILA 1: 4 COLUMNAS (GRID) --- */}
         <div className="job-card-main">
           

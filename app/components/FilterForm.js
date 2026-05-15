@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useRef, useEffect, useState } from 'react';
 import { Calendar, Trash2 } from 'lucide-react';
 import { isDateRangeInverted } from '../lib/dateRange';
+import { formatPrioridadOption, sortPrioridadesForFilter } from '../lib/prioridad';
 import { useFilterNav } from './FilterNavContext';
 
 export default function FilterForm({ filters, metadata, tipoLabels }) {
@@ -197,9 +198,9 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
           <label style={{ display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem' }}>Prioridade</label>
           <select name="prioridad" defaultValue={filters.prioridad} style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem' }}>
             <option value="TODAS">TODAS</option>
-            {metadata.prioridades.map((p) => (
+            {sortPrioridadesForFilter(metadata.prioridades).map((p) => (
               <option key={p} value={p}>
-                {p}
+                {formatPrioridadOption(p)}
               </option>
             ))}
           </select>

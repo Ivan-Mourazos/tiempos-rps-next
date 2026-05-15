@@ -130,6 +130,7 @@ async function getMetadata(filters = {}) {
     return {
       tecnicos: allTecnicos,
       tipos: TIPOS_ORDEN,
+      // Escala TGM: 1=baixa, 2=media, 3=alta
       prioridades: recPrioridades.map(r => r.prioridad).filter(p => p != null && p >= 1 && p <= 3).sort((a, b) => a - b)
     };
   } catch (error) {
@@ -392,7 +393,6 @@ function JobCardWrapper({ item, index, extraPhotos }) {
       solutionVal={item.solucion || 'Pendente'}
       tecnicoVal={tecnicoVal}
       avisoCompleto={avisoCompleto}
-      priorityVal={item.prioridad}
       obsVal={item.observaciones}
       timeColor={timeColor}
       gpsParts={item.gps && item.gps !== '0.0,0.0' ? item.gps.split(',') : null}
