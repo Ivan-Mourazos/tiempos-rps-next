@@ -238,6 +238,17 @@ h1, h2, h3, h4, h5, h6 {
 .loading-sub {
   font-size: 0.85rem;
   color: var(--text-secondary);
+  max-width: 320px;
+  line-height: 1.45;
+}
+
+.loading-sub--warning {
+  color: #b45309;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: var(--radius-md);
 }
 
 .dots {
@@ -368,6 +379,23 @@ h1, h2, h3, h4, h5, h6 {
   border: 1px solid #ef4444;
   border-radius: var(--radius-md);
   color: #ef4444;
+}
+
+/* ===== Aviso intervalo de datas (filtros) ===== */
+.filter-range-error {
+  margin: 0 0 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  border-radius: var(--radius-md);
+}
+
+.filter-range-error--info {
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.1);
 }
 
 /* ===== Filter Placeholder (mientras carga el metadata) ===== */

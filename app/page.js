@@ -6,8 +6,20 @@ import FilterForm from './components/FilterForm';
 import AutoRefresh from './components/AutoRefresh';
 import JobCard from './components/JobCard';
 import LoadingState from './components/LoadingState';
+import { FilterNavProvider, FilterNavMain } from './components/FilterNavContext';
 import LoadMore from './components/LoadMore';
 import ScrollToTop from './components/ScrollToTop';
+import {
+  DEFAULT_LIST_LIMIT,
+  SEARCH_RESULT_LIMIT,
+  getSlowQueryWarningMessage,
+  isDateRangeInverted,
+} from './lib/dateRange';
+import {
+  OUTER_APPLY_WARNING_CLIENT,
+  CLIENTE_RESOLVED_COLUMN,
+  buildClienteWarningExistsClause,
+} from './lib/monitorizacionSql';
 
 // Configuración de la DB
 const dbConfig = {
@@ -18,9 +30,34 @@ const dbConfig = {
   options: {
     encrypt: false,
     trustServerCertificate: true,
-    connectTimeout: 15000
+    connectTimeout: 15000,
+    // Rangos de datas amplos poden superar 15s; 3 min para búsquedas históricas
+    requestTimeout: 180000,
   }
 };
+
+function formatQueryError(error) {
+  const msg = error?.message || '';
+  if (msg.includes('Timeout') || error?.code === 'ETIMEOUT') {
+    return 'A consulta tardou demasiado. Proba a acotar máis as datas ou engadir cliente/aviso no filtro.';
+  }
+  if (msg.includes('Subquery returned more than 1 value')) {
+    return 'Erro interno ao resolver o nome do cliente. Proba de novo; se persiste, contacta con soporte.';
+  }
+  return msg;
+}
+
+function hasTextSearch(filters) {
+  return Boolean(filters.cliente?.trim() || filters.telefono?.trim());
+}
+
+/** Límite SQL: búsqueda por texto trae todos os coincidentes (ata SEARCH_RESULT_LIMIT). */
+function getEffectiveQueryLimit(limit, filters) {
+  if (hasTextSearch(filters)) {
+    return SEARCH_RESULT_LIMIT;
+  }
+  return Math.min(Math.max(limit, DEFAULT_LIST_LIMIT), 500);
+}
 
 const TIPO_LABELS = {
   'PM': 'Instalaciones',
@@ -108,9 +145,8 @@ const SQL_COLUMN_GROUPS = {
   // Campos base de la tabla principal tgm_monitorizacion (alias m)
   monitorizacion: [
     'm.aviso',
-    // Cliente: fallback en cascada — primero el campo directo, luego desde el warning,
-    // luego desde los clientes potenciales (2 origenes distintos)
-    'ISNULL(m.cliente, ISNULL(c2.Description, ISNULL(p2.CompanyName, p3.CompanyName))) as cliente',
+    // Cliente: OUTER APPLY TOP 1 (ver monitorizacionSql.js) — evita subquery >1 valor
+    CLIENTE_RESOLVED_COLUMN,
     'm.local', 'm.localidad', 'm.Telefono1', 'm.Telefono2',
     'm.fecha', 'm.hora', 'm.tiempo_total', 'm.tiempo_previsto',
     'm.comercial', 'm.abreviatura', 'm.tipo', 'm.prioridad',
@@ -136,19 +172,24 @@ const SQL_COLUMNS = Object.values(SQL_COLUMN_GROUPS).flat().join(', ');
 // Componente que carga los datos de la lista (Board)
 async function JobBoard({ filters, limit }) {
   const { tecnico, tipo, prioridad, cliente, telefono, fechaInicio, fechaFin } = filters;
-  
+
+  if (isDateRangeInverted(fechaInicio, fechaFin)) {
+    return (
+      <div className="error-banner" role="alert">
+        <strong>⚠️ Intervalo de datas non válido:</strong> a data &quot;Ata&quot; debe ser posterior ou igual á data &quot;Desde&quot;.
+      </div>
+    );
+  }
+
   try {
     const pool = await getDbConnection();
-    let query = `SELECT TOP ${limit} ${SQL_COLUMNS} 
+    const queryLimit = getEffectiveQueryLimit(limit, filters);
+    let query = `SELECT TOP ${queryLimit} ${SQL_COLUMNS} 
                  FROM tgm_monitorizacion m WITH (NOLOCK)
                  LEFT JOIN TGM_ORDENES_MANTENIMIENTO_DIA d WITH (NOLOCK) ON m.asistencia = d.CodOrdenMantenimiento 
                  LEFT JOIN FACCustomer c WITH (NOLOCK) ON d.CodCliente = c.CodCustomer AND d.CodCompany = c.CodCompany
                  LEFT JOIN GENState s WITH (NOLOCK) ON c.IDState = s.IDState
-                 LEFT JOIN MANMaintenanceWarning w WITH (NOLOCK) ON m.aviso = w.MaintenanceWarningCode
-                 LEFT JOIN _MANMaintenanceWarning_Custom wc WITH (NOLOCK) ON w.IDMaintenanceWarning = wc.IDMaintenanceWarning
-                 LEFT JOIN FACCustomer c2 WITH (NOLOCK) ON wc.IDCliente = c2.IDCustomer
-                 LEFT JOIN FACPotentialCustomerSL p2 WITH (NOLOCK) ON wc.IDCliente = p2.IDPotentialCustomer
-                 LEFT JOIN FACPotentialCustomerSL p3 WITH (NOLOCK) ON wc.IDClientePotencial = p3.IDPotentialCustomer
+                 ${OUTER_APPLY_WARNING_CLIENT}
                  WHERE 1=1`;
     const request = pool.request();
 
@@ -166,10 +207,18 @@ async function JobBoard({ filters, limit }) {
     }
     if (cliente) {
       const palabras = cliente.trim().split(/\s+/).filter(Boolean);
-      query += ` AND (${palabras.map((p, i) => {
-        request.input(`cliente${i}`, `%${p}%`);
-        return `(m.cliente LIKE @cliente${i} OR c2.Description LIKE @cliente${i} OR p2.CompanyName LIKE @cliente${i} OR p3.CompanyName LIKE @cliente${i})`;
-      }).join(' AND ')} OR m.aviso LIKE @clienteFull OR m.comercial LIKE @clienteFull)`;
+      const paramNames = palabras.map((p, i) => {
+        const name = `cliente${i}`;
+        request.input(name, `%${p}%`);
+        return name;
+      });
+
+      const directMatch = palabras
+        .map((_, i) => `m.cliente LIKE @cliente${i}`)
+        .join(' AND ');
+      const warningExists = buildClienteWarningExistsClause(paramNames);
+
+      query += ` AND ((${directMatch}) OR ${warningExists} OR m.aviso LIKE @clienteFull OR m.comercial LIKE @clienteFull)`;
       request.input('clienteFull', `%${cliente}%`);
     }
     if (telefono) {
@@ -277,15 +326,15 @@ async function JobBoard({ filters, limit }) {
             return <JobCardWrapper key={index} item={item} index={index} extraPhotos={extraPhotos} />;
           })}
         </ul>
-        {dbData.length >= limit && (
-          <LoadMore currentLimit={limit} />
+        {dbData.length >= queryLimit && queryLimit < SEARCH_RESULT_LIMIT && (
+          <LoadMore currentLimit={queryLimit} />
         )}
       </>
     );
   } catch (error) {
     return (
       <div className="error-banner" role="alert">
-        <strong>⚠️ Error al cargar los registros:</strong> {error.message}
+        <strong>⚠️ Error al cargar los registros:</strong> {formatQueryError(error)}
       </div>
     );
   }
@@ -358,10 +407,8 @@ function JobCardWrapper({ item, index, extraPhotos }) {
 export default async function Page({ searchParams }) {
   const params = await searchParams;
   const today = new Date().toISOString().split('T')[0];
-  const limit = parseInt(params.limit) || 100;
-
-  // Si no hay ningún parámetro de fecha, la carga inicial muestra solo el día de hoy
   const hasDateParams = params.fechaInicio || params.fechaFin;
+  const limit = parseInt(params.limit) || DEFAULT_LIST_LIMIT;
 
   const filters = {
     tecnico: params.tecnico || 'TODOS',
@@ -373,10 +420,13 @@ export default async function Page({ searchParams }) {
     fechaFin: params.fechaFin || ''
   };
 
+  const loadingSubmessage = getSlowQueryWarningMessage(filters.fechaInicio, filters.fechaFin);
+
   // El metadata lo cargamos de forma asíncrona también para no bloquear el esqueleto base
   const metadataPromise = getMetadata(filters);
 
   return (
+    <FilterNavProvider>
     <div className="dashboard-container">
       <AutoRefresh interval={60000} />
       <header className="header" style={{ padding: '0.8rem 1.5rem' }}>
@@ -392,16 +442,34 @@ export default async function Page({ searchParams }) {
       </header>
 
       <main className="main-content" style={{ padding: '0.5rem 1rem' }}>
-        {/* El tablero se carga en streaming. La key única fuerza el fallback al cambiar filtros */}
-        <Suspense 
-          key={JSON.stringify({...filters, limit})}
-          fallback={<LoadingState message="Cargando datos" />}
+        <Suspense
+          fallback={
+            <LoadingState
+              message="Cargando datos"
+              submessage={loadingSubmessage}
+              submessageVariant={loadingSubmessage ? 'warning' : 'default'}
+            />
+          }
         >
-          <JobBoard filters={filters} limit={limit} />
+          <FilterNavMain>
+            <Suspense
+              key={JSON.stringify({ ...filters, limit })}
+              fallback={
+                <LoadingState
+                  message="Cargando datos"
+                  submessage={loadingSubmessage}
+                  submessageVariant={loadingSubmessage ? 'warning' : 'default'}
+                />
+              }
+            >
+              <JobBoard filters={filters} limit={limit} />
+            </Suspense>
+          </FilterNavMain>
         </Suspense>
         <ScrollToTop />
       </main>
     </div>
+    </FilterNavProvider>
   );
 }
 

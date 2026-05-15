@@ -31,11 +31,13 @@ export function MiniSpinner({ size = 16, color = '#ffffff' }) {
  * Props:
  *  - message: texto principal (por defecto: "Cargando datos")
  *  - submessage: texto secundario opcional
+ *  - submessageVariant: 'default' | 'warning' (aviso consulta lenta)
  *  - fullscreen: si true ocupa min-height alto (uso en fallback de Suspense)
  */
 export default function LoadingState({
   message = 'Cargando datos',
   submessage = null,
+  submessageVariant = 'default',
   fullscreen = true,
 }) {
   return (
@@ -61,7 +63,11 @@ export default function LoadingState({
               <span className="dot">.</span>
             </span>
           </span>
-          {submessage && <span className="loading-sub">{submessage}</span>}
+          {submessage && (
+            <span className={`loading-sub loading-sub--${submessageVariant}`}>
+              {submessage}
+            </span>
+          )}
         </div>
 
         <div className="progress-track" aria-hidden="true">
