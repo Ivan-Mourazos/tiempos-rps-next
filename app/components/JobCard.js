@@ -132,7 +132,6 @@ export default function JobCard({
         borderLeft: `6px solid ${typeColor}`, // Borde grueso lateral según el tipo
         position: 'relative', 
         overflow: 'hidden',
-        background: 'var(--bg-color)',
       }}>
         {/* --- FILA 1: 4 COLUMNAS (GRID) --- */}
         <div className="job-card-main">
@@ -233,7 +232,7 @@ export default function JobCard({
               <div style={{ 
                 fontSize: '0.85rem', fontWeight: '900', color: timeColor, 
                 display: 'flex', flexDirection: 'column', gap: '0.1rem', 
-                background: 'var(--bg-color)', padding: '0.3rem 0.5rem', 
+                background: 'var(--surface-inset)', padding: '0.3rem 0.5rem', 
                 borderRadius: '4px', border: '1px solid var(--border-color)',
                 width: '100%', alignItems: 'center'
               }}>
@@ -404,7 +403,7 @@ export default function JobCard({
                 top: '0.4rem',
                 bottom: '0.6rem',
                 width: '40px',
-                background: 'linear-gradient(to left, var(--bg-color), transparent)',
+                background: 'linear-gradient(to left, var(--surface-color), transparent)',
                 pointerEvents: 'none',
                 display: 'flex',
                 alignItems: 'center',

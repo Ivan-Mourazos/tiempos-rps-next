@@ -3,16 +3,29 @@
 :root {
   --brand-orange: #f37021; /* Toldos Gómez Orange */
   --brand-orange-hover: #e06010;
+  --brand-glow: rgba(243, 112, 33, 0.14);
   --bg-color: #f8fafc;
   --surface-color: #ffffff;
+  --surface-elevated: #ffffff;
+  --input-bg: #f1f5f9;
   --text-primary: #1e293b;
   --text-secondary: #64748b;
   --border-color: #e2e8f0;
-  
+  --border-strong: #cbd5e1;
+  --filter-panel-bg: rgba(15, 23, 42, 0.03);
+  --surface-inset: #f1f5f9;
+  --highlight-edge: rgba(15, 23, 42, 0.08);
+  --warning-fg: #b45309;
+  --warning-bg: rgba(245, 158, 11, 0.12);
+  --warning-border: rgba(245, 158, 11, 0.35);
+  --error-fg: #dc2626;
+  --error-bg: rgba(239, 68, 68, 0.1);
+  --error-border: #ef4444;
+
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-  
+
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
 
@@ -20,14 +33,71 @@
 }
 
 html.dark {
-  --bg-color: #2d2a2e;
-  --surface-color: #403e41;
-  --text-primary: #fcfcfa;
-  --text-secondary: #b8b6b8;
-  --border-color: #5b595c;
-  
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
+  /* Paleta con profundidad (no gris plano único) */
+  --brand-orange: #ff9349;
+  --brand-orange-hover: #ff7a28;
+  --brand-glow: rgba(255, 147, 73, 0.35);
+  --bg-base: #050608;
+  --bg-color: #090b10;
+  --surface-color: #12161f;
+  --surface-elevated: #1c2433;
+  --surface-highlight: #263044;
+  --surface-inset: #07090d;
+  --input-bg: #0c0f15;
+  --text-primary: #f3f5f9;
+  --text-secondary: #94a3b8;
+  --border-color: rgba(148, 163, 184, 0.14);
+  --border-strong: rgba(148, 163, 184, 0.26);
+  --highlight-edge: rgba(255, 255, 255, 0.09);
+  --filter-panel-bg: rgba(18, 22, 31, 0.65);
+
+  --warning-fg: #fbbf24;
+  --warning-bg: rgba(251, 191, 36, 0.1);
+  --warning-border: rgba(251, 191, 36, 0.35);
+  --error-fg: #f87171;
+  --error-bg: rgba(248, 113, 113, 0.12);
+  --error-border: rgba(248, 113, 113, 0.45);
+
+  /* Elevación tipo dashboard premium (luz arriba + sombra abajo) */
+  --shadow-sm:
+    inset 0 1px 0 var(--highlight-edge),
+    0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md:
+    inset 0 1px 0 var(--highlight-edge),
+    0 2px 4px rgba(0, 0, 0, 0.35),
+    0 8px 20px -6px rgba(0, 0, 0, 0.55);
+  --shadow-lg:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 4px 8px rgba(0, 0, 0, 0.4),
+    0 20px 48px -12px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 147, 73, 0.08);
+
   color-scheme: dark;
+}
+
+/* Ambiente: mallas de luz + grano sutil (patrón premium, no color sólido) */
+html.dark body {
+  background-color: var(--bg-base);
+  background-image:
+    radial-gradient(ellipse 100% 60% at 50% -18%, rgba(255, 147, 73, 0.16), transparent 52%),
+    radial-gradient(ellipse 45% 35% at 100% 0%, rgba(99, 102, 241, 0.07), transparent 45%),
+    radial-gradient(ellipse 40% 30% at 0% 100%, rgba(15, 23, 42, 0.5), transparent 50%),
+    linear-gradient(180deg, #0c0e14 0%, var(--bg-base) 55%, #030405 100%);
+}
+
+html.dark body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+html.dark .dashboard-container {
+  position: relative;
+  z-index: 1;
 }
 
 * {
@@ -63,9 +133,87 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: var(--shadow-sm);
 }
 
+html.dark .header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(12, 15, 22, 0.78);
+  backdrop-filter: blur(18px) saturate(1.35);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 32px -8px rgba(0, 0, 0, 0.65);
+}
+
+html.dark .header h1 {
+  text-shadow: 0 0 28px rgba(255, 147, 73, 0.35);
+}
+
+html.dark .header form {
+  background: linear-gradient(
+    145deg,
+    rgba(38, 48, 68, 0.45) 0%,
+    rgba(12, 15, 22, 0.55) 100%
+  ) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 4px 16px rgba(0, 0, 0, 0.25) !important;
+  backdrop-filter: blur(8px);
+}
+
+html.dark .header input,
+html.dark .header select {
+  background-color: var(--input-bg) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+html.dark .header input:focus,
+html.dark .header select:focus {
+  border-color: rgba(255, 147, 73, 0.5) !important;
+  outline: none;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 0 0 2px rgba(255, 147, 73, 0.18),
+    0 0 20px -4px var(--brand-glow);
+}
+
 .header h1 {
   font-size: 1.5rem;
   color: var(--brand-orange);
+}
+
+/* Botón tema (glass + borde luminoso) */
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--surface-color);
+  color: var(--brand-orange);
+  cursor: pointer;
+  font-weight: 500;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+html.dark .theme-toggle-btn {
+  background: linear-gradient(180deg, var(--surface-elevated), var(--surface-color));
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+html.dark .theme-toggle-btn:hover {
+  border-color: rgba(255, 147, 73, 0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 24px -6px var(--brand-glow);
+  transform: translateY(-1px);
 }
 
 .main-content {
@@ -106,6 +254,60 @@ h1, h2, h3, h4, h5, h6 {
 .job-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
+}
+
+html.dark .job-card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    168deg,
+    var(--surface-highlight) 0%,
+    var(--surface-elevated) 28%,
+    var(--surface-color) 62%,
+    #0e1118 100%
+  ) !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 -12px 24px -12px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(0, 0, 0, 0.4),
+    0 4px 8px rgba(0, 0, 0, 0.3),
+    0 16px 36px -10px rgba(0, 0, 0, 0.55);
+}
+
+html.dark .job-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.22) 35%,
+    rgba(255, 147, 73, 0.45) 50%,
+    rgba(255, 255, 255, 0.22) 65%,
+    transparent
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+html.dark .job-card:hover {
+  border-color: rgba(255, 147, 73, 0.32) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px rgba(255, 147, 73, 0.15),
+    0 8px 16px rgba(0, 0, 0, 0.35),
+    0 24px 48px -16px rgba(0, 0, 0, 0.65),
+    0 0 56px -16px var(--brand-glow);
+}
+
+html.dark .job-card [data-inset-panel] {
+  background: var(--surface-inset) !important;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.05) !important;
 }
 
 .job-card-main {
@@ -199,7 +401,7 @@ h1, h2, h3, h4, h5, h6 {
   border-top-color: var(--brand-orange);
   border-right-color: var(--brand-orange);
   animation: ls-spin 1.4s cubic-bezier(0.5, 0.15, 0.5, 0.85) infinite;
-  box-shadow: 0 0 24px rgba(243, 112, 33, 0.15);
+  box-shadow: 0 0 24px var(--brand-glow);
 }
 
 .spinner-ring.inner {
@@ -243,11 +445,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .loading-sub--warning {
-  color: #b45309;
+  color: var(--warning-fg);
   font-weight: 500;
   padding: 0.5rem 0.75rem;
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
   border-radius: var(--radius-md);
 }
 
@@ -270,6 +472,15 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--border-color);
   border-radius: 999px;
   overflow: hidden;
+}
+
+html.dark .progress-track {
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+html.dark .loading-sub--warning {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .progress-bar {
@@ -341,6 +552,25 @@ h1, h2, h3, h4, h5, h6 {
   gap: 0.5rem;
 }
 
+html.dark .empty-state {
+  max-width: 32rem;
+  margin: 2rem auto;
+  padding: 2.5rem 2rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    155deg,
+    rgba(38, 48, 68, 0.55) 0%,
+    rgba(12, 15, 22, 0.85) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    var(--shadow-lg),
+    0 0 72px -24px var(--brand-glow);
+}
+
 .empty-state-title {
   font-size: 1.2rem;
   font-weight: 600;
@@ -372,13 +602,21 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: var(--shadow-md);
 }
 
+html.dark .empty-state-action {
+  background: linear-gradient(180deg, #ff9f5c 0%, var(--brand-orange) 45%, #e86a1a 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 4px 14px var(--brand-glow),
+    0 8px 24px -8px rgba(255, 147, 73, 0.5);
+}
+
 /* ===== Error Banner ===== */
 .error-banner {
   padding: 1rem;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid #ef4444;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
   border-radius: var(--radius-md);
-  color: #ef4444;
+  color: var(--error-fg);
 }
 
 /* ===== Aviso intervalo de datas (filtros) ===== */
@@ -387,15 +625,15 @@ h1, h2, h3, h4, h5, h6 {
   padding: 0.5rem 0.75rem;
   font-size: 0.8rem;
   font-weight: 500;
-  color: #b45309;
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: var(--warning-fg);
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
   border-radius: var(--radius-md);
 }
 
 .filter-range-error--info {
-  color: #b45309;
-  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning-fg);
+  background: var(--warning-bg);
 }
 
 /* ===== Filter Placeholder (mientras carga el metadata) ===== */
@@ -406,14 +644,203 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 6px;
 }
 
-/* Ocultar el icono nativo de calendario para evitar el efecto de "dos calendarios" */
-/* Esto permite usar nuestro propio icono personalizado mediante showPicker() */
-input[type="date"]::-webkit-calendar-picker-indicator {
-  display: none;
-  -webkit-appearance: none;
+html.dark .filter-placeholder {
+  background: var(--surface-elevated);
+  opacity: 0.65;
+  border: 1px solid var(--border-color);
 }
 
-/* Para navegadores que no soportan display: none en el indicator */
-input[type="date"] {
+/* Ocultar el icono nativo de calendario para evitar el efecto de "dos calendarios" */
+/* Esto permite usar nuestro propio icono personalizado mediante showPicker() */
+/* ===== Date filter (calendario custom, sen picker nativo Chromium) ===== */
+.date-filter-field {
   position: relative;
+  width: 100%;
+}
+
+.date-filter-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.date-filter-trigger:hover {
+  border-color: var(--border-strong);
+}
+
+.date-filter-trigger[aria-expanded='true'] {
+  border-color: rgba(243, 112, 33, 0.55);
+  box-shadow: 0 0 0 2px var(--brand-glow);
+}
+
+.date-filter-trigger-placeholder {
+  color: var(--text-secondary);
+}
+
+.date-filter-trigger svg {
+  flex-shrink: 0;
+  color: var(--brand-orange);
+}
+
+.date-filter-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 50;
+  min-width: 252px;
+  padding: 0.65rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-lg);
+}
+
+html.dark .date-filter-popover {
+  background: linear-gradient(165deg, var(--surface-highlight), var(--surface-elevated));
+  box-shadow:
+    inset 0 1px 0 var(--highlight-edge),
+    var(--shadow-lg);
+}
+
+.date-filter-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.date-filter-month-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: capitalize;
+}
+
+.date-filter-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--input-bg);
+  color: var(--brand-orange);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.date-filter-nav-btn:hover {
+  border-color: var(--brand-orange);
+  background: var(--brand-glow);
+}
+
+.date-filter-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.date-filter-weekdays span {
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.date-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.date-filter-day-empty {
+  aspect-ratio: 1;
+}
+
+.date-filter-day {
+  aspect-ratio: 1;
+  min-width: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.date-filter-day:hover {
+  background: var(--brand-glow);
+  color: var(--brand-orange);
+}
+
+.date-filter-day.is-today {
+  outline: 1px solid var(--brand-orange);
+  outline-offset: -1px;
+}
+
+.date-filter-day.is-selected {
+  background: var(--brand-orange);
+  color: #fff;
+  font-weight: 700;
+}
+
+.date-filter-day.is-selected:hover {
+  background: var(--brand-orange-hover);
+  color: #fff;
+}
+
+.date-filter-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.35rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.65rem;
+  cursor: pointer;
+}
+
+.date-filter-clear:hover {
+  color: var(--error-fg);
+  background: var(--error-bg);
+}
+
+/* Sin backdrop-filter: fondos sólidos equivalentes */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html.dark .header {
+    background: var(--surface-elevated);
+  }
+
+  html.dark .empty-state {
+    background: var(--surface-elevated);
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.dark .theme-toggle-btn:hover,
+  html.dark .job-card:hover {
+    transform: none;
+  }
 }

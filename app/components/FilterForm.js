@@ -6,32 +6,15 @@ import { Calendar, Trash2 } from 'lucide-react';
 import { getLocalTodayISO, isDateRangeInverted } from '../lib/dateRange';
 import { formatPrioridadOption, sortPrioridadesForFilter } from '../lib/prioridad';
 import { useFilterNav } from './FilterNavContext';
+import DateFilterField from './DateFilterField';
 
 export default function FilterForm({ filters, metadata, tipoLabels }) {
   const router = useRouter();
   const { startTransition } = useFilterNav();
   const formRef = useRef(null);
   const [rangeError, setRangeError] = useState(null);
-  const editingDatesRef = useRef(false);
-  const skipDateBlurCommitRef = useRef(false);
-  const [dateDraft, setDateDraft] = useState({
-    fechaInicio: filters.fechaInicio || '',
-    fechaFin: filters.fechaFin || '',
-  });
 
-  // Forzar blur ao pinchar fóra: o calendario nativo a veces non pecha só.
-  useEffect(() => {
-    function handlePointerDown(e) {
-      const active = document.activeElement;
-      if (active?.type !== 'date') return;
-      if (active === e.target) return;
-      active.blur();
-    }
-    document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, []);
-
-  // Sincroniza os inputs coa URL. Datas en borrador mentres se edita o calendario.
+  // Sincroniza selects/texto coa URL (datas van por DateFilterField + hidden inputs).
   useEffect(() => {
     const form = formRef.current;
     if (!form) return;
@@ -42,13 +25,6 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
         form[name].value = value;
       }
     };
-
-    if (!editingDatesRef.current) {
-      setDateDraft({
-        fechaInicio: filters.fechaInicio || '',
-        fechaFin: filters.fechaFin || '',
-      });
-    }
 
     syncInput('tecnico', filters.tecnico || 'TODOS');
     syncInput('tipo', filters.tipo || 'TODOS');
@@ -66,10 +42,21 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
     filters.telefono,
   ]);
 
-  function applyFiltersFromForm(form) {
+  /**
+   * @param {HTMLFormElement} form
+   * @param {{ fechaInicio?: string, fechaFin?: string }} dateOverrides — datas escollidas no calendario (evita input hidden controlado por React)
+   */
+  function applyFiltersFromForm(form, dateOverrides = {}) {
     const formData = new FormData(form);
-    const fechaInicio = formData.get('fechaInicio');
-    const fechaFin = formData.get('fechaFin');
+
+    const fechaInicio =
+      dateOverrides.fechaInicio !== undefined
+        ? dateOverrides.fechaInicio
+        : filters.fechaInicio || '';
+    const fechaFin =
+      dateOverrides.fechaFin !== undefined
+        ? dateOverrides.fechaFin
+        : filters.fechaFin || '';
 
     if (isDateRangeInverted(fechaInicio, fechaFin)) {
       setRangeError('A data "Ata" debe ser posterior ou igual á data "Desde".');
@@ -79,11 +66,14 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
 
     const searchParams = new URLSearchParams();
 
-    for (let [key, value] of formData.entries()) {
+    for (const [key, value] of formData.entries()) {
       if (value && value !== 'TODOS' && value !== 'TODAS' && value !== '') {
         searchParams.set(key, value);
       }
     }
+
+    if (fechaInicio) searchParams.set('fechaInicio', fechaInicio);
+    if (fechaFin) searchParams.set('fechaFin', fechaFin);
 
     startTransition(() => {
       router.push(`/?${searchParams.toString()}`);
@@ -96,50 +86,16 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
     applyFiltersFromForm(e.currentTarget);
   }
 
-  // Datas en borrador: cambiar mes no dispara carga (só ao blur / Enter).
-  function handleDateDraftChange(e) {
-    const { name, value } = e.target;
-    setDateDraft((prev) => ({ ...prev, [name]: value }));
-  }
-
-  function commitDateFilters() {
+  function handleDateSelect(name, isoDate) {
     const form = formRef.current;
     if (!form) return;
 
-    const inicio = dateDraft.fechaInicio || '';
-    const fin = dateDraft.fechaFin || '';
-    if (
-      inicio === (filters.fechaInicio || '') &&
-      fin === (filters.fechaFin || '')
-    ) {
-      return;
-    }
+    const urlVal =
+      name === 'fechaInicio' ? filters.fechaInicio || '' : filters.fechaFin || '';
+    if (isoDate === urlVal) return;
 
-    form.fechaInicio.value = inicio;
-    form.fechaFin.value = fin;
-    applyFiltersFromForm(form);
-  }
-
-  function handleDateFocus() {
-    editingDatesRef.current = true;
-  }
-
-  function handleDateBlur() {
-    editingDatesRef.current = false;
-    if (skipDateBlurCommitRef.current) {
-      skipDateBlurCommitRef.current = false;
-      return;
-    }
-    commitDateFilters();
-  }
-
-  function handleDateKeyDown(e) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      skipDateBlurCommitRef.current = true;
-      commitDateFilters();
-      e.target.blur();
-    }
+    const dateOverrides = { [name]: isoDate };
+    applyFiltersFromForm(form, dateOverrides);
   }
 
   // Texto: buscar ao pulsar Enter ou ao sair do campo (blur).
@@ -164,33 +120,18 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
   }
 
   function handleClear() {
-    const today = getLocalTodayISO();
     if (formRef.current) {
       const form = formRef.current;
       form.tecnico.value = 'TODOS';
-      form.fechaInicio.value = today;
-      form.fechaFin.value = '';
       form.tipo.value = 'TODOS';
       form.prioridad.value = 'TODAS';
       form.cliente.value = '';
       form.telefono.value = '';
     }
-    setDateDraft({ fechaInicio: today, fechaFin: '' });
     startTransition(() => {
       router.push('/');
     });
   }
-
-  const togglePicker = (id) => {
-    const el = document.getElementById(id);
-    if (el) {
-      if (document.activeElement === el) {
-        el.blur();
-      } else {
-        el.showPicker();
-      }
-    }
-  };
 
   return (
     <>
@@ -209,7 +150,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
           flexWrap: 'wrap',
           gap: '0.4rem',
           padding: '0.4rem',
-          background: 'rgba(255,255,255,0.02)',
+          background: 'var(--filter-panel-bg)',
           borderRadius: '6px',
           border: '1px solid var(--border-color)',
           alignItems: 'flex-end',
@@ -218,7 +159,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
       >
         <div style={{ flex: '1 1 140px' }}>
           <label style={{ display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem' }}>Técnico</label>
-          <select name="tecnico" defaultValue={filters.tecnico} style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem' }}>
+          <select name="tecnico" defaultValue={filters.tecnico} style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.75rem' }}>
             <option value="TODOS">TODOS</option>
             {metadata.tecnicos.map((t) => (
               <option key={t.abbr} value={t.abbr}>
@@ -231,55 +172,30 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
           <label style={{ display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
             <Calendar size={10} /> DENDE
           </label>
-          <div style={{ position: 'relative' }}>
-            <input
-              type="date"
-              name="fechaInicio"
-              value={dateDraft.fechaInicio}
-              id="fechaInicio"
-              onFocus={handleDateFocus}
-              onClick={(e) => e.target.showPicker()}
-              onChange={handleDateDraftChange}
-              onBlur={handleDateBlur}
-              onKeyDown={handleDateKeyDown}
-              style={{ width: '100%', padding: '0.3rem', paddingRight: '1.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem', cursor: 'pointer', outline: 'none' }}
-            />
-            <span
-              onClick={() => togglePicker('fechaInicio')}
-              style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--brand-orange)', pointerEvents: 'none' }}
-            >
-              <Calendar size={14} />
-            </span>
-          </div>
+          <DateFilterField
+            id="fechaInicio"
+            name="fechaInicio"
+            value={filters.fechaInicio || ''}
+            placeholder="Día"
+            onSelect={(iso) => handleDateSelect('fechaInicio', iso)}
+          />
         </div>
         <div style={{ flex: '0 0 120px' }}>
           <label style={{ display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
             <Calendar size={10} /> ATA
           </label>
-          <div style={{ position: 'relative' }}>
-            <input
-              type="date"
-              name="fechaFin"
-              value={dateDraft.fechaFin}
-              id="fechaFin"
-              onFocus={handleDateFocus}
-              onClick={(e) => e.target.showPicker()}
-              onChange={handleDateDraftChange}
-              onBlur={handleDateBlur}
-              onKeyDown={handleDateKeyDown}
-              style={{ width: '100%', padding: '0.3rem', paddingRight: '1.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem', cursor: 'pointer', outline: 'none' }}
-            />
-            <span
-              onClick={() => togglePicker('fechaFin')}
-              style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--brand-orange)', pointerEvents: 'none' }}
-            >
-              <Calendar size={14} />
-            </span>
-          </div>
+          <DateFilterField
+            id="fechaFin"
+            name="fechaFin"
+            value={filters.fechaFin || ''}
+            placeholder="Opcional"
+            allowClear
+            onSelect={(iso) => handleDateSelect('fechaFin', iso)}
+          />
         </div>
         <div style={{ flex: '1 1 140px' }}>
           <label style={{ display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem' }}>Tipo</label>
-          <select name="tipo" defaultValue={filters.tipo} style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem' }}>
+          <select name="tipo" defaultValue={filters.tipo} style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.75rem' }}>
             <option value="TODOS">TODOS</option>
             {metadata.tipos.map((t) => (
               <option key={t} value={t}>
@@ -290,7 +206,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
         </div>
         <div style={{ flex: '1 1 80px' }}>
           <label style={{ display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem' }}>Prioridade</label>
-          <select name="prioridad" defaultValue={filters.prioridad} style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem' }}>
+          <select name="prioridad" defaultValue={filters.prioridad} style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.75rem' }}>
             <option value="TODAS">TODAS</option>
             {sortPrioridadesForFilter(metadata.prioridades).map((p) => (
               <option key={p} value={p}>
@@ -308,7 +224,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
             placeholder="Cli..."
             onBlur={handleDeferredFilterCommit}
             onKeyDown={handleDeferredKeyDown}
-            style={{ width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem' }}
+            style={{ width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.75rem' }}
           />
         </div>
         <div style={{ flex: '1 1 100px' }}>
@@ -320,7 +236,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
             placeholder="Tlf..."
             onBlur={handleDeferredFilterCommit}
             onKeyDown={handleDeferredKeyDown}
-            style={{ width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem' }}
+            style={{ width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.75rem' }}
           />
         </div>
         <div style={{ display: 'flex', gap: '0.2rem' }}>
