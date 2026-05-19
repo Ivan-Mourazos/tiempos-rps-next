@@ -2,24 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { Moon, Sun } from 'lucide-react';
+import { applyThemeMode, readThemeFromDocument } from '../lib/theme';
 
 export default function ThemeToggle() {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    // Check initial state (default to light per request)
-    const isDarkClass = document.documentElement.classList.contains('dark');
-    setIsDark(isDarkClass);
+    setIsDark(readThemeFromDocument() === 'dark');
   }, []);
 
   const toggleTheme = () => {
-    if (isDark) {
-      document.documentElement.classList.remove('dark');
-      setIsDark(false);
-    } else {
-      document.documentElement.classList.add('dark');
-      setIsDark(true);
-    }
+    const nextDark = !isDark;
+    applyThemeMode(nextDark ? 'dark' : 'light');
+    setIsDark(nextDark);
   };
 
   return (
@@ -27,6 +22,7 @@ export default function ThemeToggle() {
       type="button"
       className="theme-toggle-btn"
       onClick={toggleTheme}
+      aria-pressed={isDark}
     >
       {isDark ? <Sun size={18} /> : <Moon size={18} />}
       {isDark ? 'Modo Claro' : 'Modo Escuro'}
