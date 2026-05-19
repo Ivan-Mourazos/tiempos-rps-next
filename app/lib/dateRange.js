@@ -7,6 +7,34 @@ export const SEARCH_RESULT_LIMIT = 10000;
 /** Tope de filas en listados normales (sin búsqueda de texto). */
 export const DEFAULT_LIST_LIMIT = 100;
 
+/** Zona horaria do panel (Galicia / España peninsular). */
+export const DASHBOARD_TIME_ZONE = 'Europe/Madrid';
+
+/** Data de hoxe en YYYY-MM-DD (mesma rexión que os comerciais). */
+export function getLocalTodayISO(timeZone = DASHBOARD_TIME_ZONE) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date());
+}
+
+/**
+ * Vista por defecto: sen filtros activos na URL ou só o día de hoxe en "Desde".
+ * Usa searchParams crus, non o obxecto filters (xa leva defaults do servidor).
+ */
+export function isTodayDashboardView(searchParams, today = getLocalTodayISO()) {
+  const hasOtherFilters =
+    (searchParams.tecnico && searchParams.tecnico !== 'TODOS') ||
+    (searchParams.tipo && searchParams.tipo !== 'TODOS') ||
+    (searchParams.prioridad && searchParams.prioridad !== 'TODAS') ||
+    Boolean(String(searchParams.cliente || '').trim()) ||
+    Boolean(String(searchParams.telefono || '').trim()) ||
+    Boolean(searchParams.fechaFin);
+
+  if (hasOtherFilters) return false;
+
+  const fechaInicio = searchParams.fechaInicio;
+  if (!fechaInicio) return true;
+  return fechaInicio === today;
+}
+
 /**
  * Cuenta días del intervalo [fechaInicio, fechaFin].
  * Si fechaFin está vacía, equivale a un solo día (misma lógica que el servidor).

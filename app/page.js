@@ -12,8 +12,10 @@ import ScrollToTop from './components/ScrollToTop';
 import {
   DEFAULT_LIST_LIMIT,
   SEARCH_RESULT_LIMIT,
+  getLocalTodayISO,
   getSlowQueryWarningMessage,
   isDateRangeInverted,
+  isTodayDashboardView,
 } from './lib/dateRange';
 import {
   OUTER_APPLY_WARNING_CLIENT,
@@ -171,7 +173,7 @@ const SQL_COLUMN_GROUPS = {
 const SQL_COLUMNS = Object.values(SQL_COLUMN_GROUPS).flat().join(', ');
 
 // Componente que carga los datos de la lista (Board)
-async function JobBoard({ filters, limit }) {
+async function JobBoard({ filters, limit, isTodayView }) {
   const { tecnico, tipo, prioridad, cliente, telefono, fechaInicio, fechaFin } = filters;
 
   if (isDateRangeInverted(fechaInicio, fechaFin)) {
@@ -262,11 +264,22 @@ async function JobBoard({ filters, limit }) {
     if (dbData.length === 0) {
       return (
         <div className="empty-state">
-          <p className="empty-state-title">Non hay datos para esta selección.</p>
-          <p className="empty-state-hint">Proba a cambiar os filtros ou as fechas.</p>
-          <Link href="/" className="empty-state-action">
-            Volver á vista de hoxe
-          </Link>
+          {isTodayView ? (
+            <>
+              <p className="empty-state-title">Aínda non hai rexistros hoxe</p>
+              <p className="empty-state-hint">
+                Cando os comerciais rexistren actividade, aparecerán aquí automaticamente.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="empty-state-title">Non hay datos para esta selección.</p>
+              <p className="empty-state-hint">Proba a cambiar os filtros ou as fechas.</p>
+              <Link href="/" className="empty-state-action">
+                Volver á vista de hoxe
+              </Link>
+            </>
+          )}
         </div>
       );
     }
@@ -406,7 +419,8 @@ function JobCardWrapper({ item, index, extraPhotos }) {
 // Componente principal de la página
 export default async function Page({ searchParams }) {
   const params = await searchParams;
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalTodayISO();
+  const isTodayView = isTodayDashboardView(params, today);
   const hasDateParams = params.fechaInicio || params.fechaFin;
   const limit = parseInt(params.limit) || DEFAULT_LIST_LIMIT;
 
@@ -462,7 +476,7 @@ export default async function Page({ searchParams }) {
                 />
               }
             >
-              <JobBoard filters={filters} limit={limit} />
+              <JobBoard filters={filters} limit={limit} isTodayView={isTodayView} />
             </Suspense>
           </FilterNavMain>
         </Suspense>

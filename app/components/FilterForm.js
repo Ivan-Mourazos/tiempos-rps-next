@@ -3,19 +3,35 @@
 import { useRouter } from 'next/navigation';
 import { useRef, useEffect, useState } from 'react';
 import { Calendar, Trash2 } from 'lucide-react';
-import { isDateRangeInverted } from '../lib/dateRange';
+import { getLocalTodayISO, isDateRangeInverted } from '../lib/dateRange';
 import { formatPrioridadOption, sortPrioridadesForFilter } from '../lib/prioridad';
 import { useFilterNav } from './FilterNavContext';
 
 export default function FilterForm({ filters, metadata, tipoLabels }) {
   const router = useRouter();
   const { startTransition } = useFilterNav();
-  const timeoutRef = useRef(null);
   const formRef = useRef(null);
   const [rangeError, setRangeError] = useState(null);
+  const editingDatesRef = useRef(false);
+  const skipDateBlurCommitRef = useRef(false);
+  const [dateDraft, setDateDraft] = useState({
+    fechaInicio: filters.fechaInicio || '',
+    fechaFin: filters.fechaFin || '',
+  });
 
-  // Sincroniza los inputs del form con la prop `filters` cuando la URL cambia
-  // desde fuera (botón LIMPIAR, link "Volver á vista de hoxe", deep links, etc.).
+  // Forzar blur ao pinchar fóra: o calendario nativo a veces non pecha só.
+  useEffect(() => {
+    function handlePointerDown(e) {
+      const active = document.activeElement;
+      if (active?.type !== 'date') return;
+      if (active === e.target) return;
+      active.blur();
+    }
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, []);
+
+  // Sincroniza os inputs coa URL. Datas en borrador mentres se edita o calendario.
   useEffect(() => {
     const form = formRef.current;
     if (!form) return;
@@ -27,9 +43,14 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
       }
     };
 
+    if (!editingDatesRef.current) {
+      setDateDraft({
+        fechaInicio: filters.fechaInicio || '',
+        fechaFin: filters.fechaFin || '',
+      });
+    }
+
     syncInput('tecnico', filters.tecnico || 'TODOS');
-    syncInput('fechaInicio', filters.fechaInicio);
-    syncInput('fechaFin', filters.fechaFin);
     syncInput('tipo', filters.tipo || 'TODOS');
     syncInput('prioridad', filters.prioridad || 'TODAS');
     syncInput('cliente', filters.cliente);
@@ -45,42 +66,106 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
     filters.telefono,
   ]);
 
+  function applyFiltersFromForm(form) {
+    const formData = new FormData(form);
+    const fechaInicio = formData.get('fechaInicio');
+    const fechaFin = formData.get('fechaFin');
+
+    if (isDateRangeInverted(fechaInicio, fechaFin)) {
+      setRangeError('A data "Ata" debe ser posterior ou igual á data "Desde".');
+      return;
+    }
+    setRangeError(null);
+
+    const searchParams = new URLSearchParams();
+
+    for (let [key, value] of formData.entries()) {
+      if (value && value !== 'TODOS' && value !== 'TODAS' && value !== '') {
+        searchParams.set(key, value);
+      }
+    }
+
+    startTransition(() => {
+      router.push(`/?${searchParams.toString()}`);
+    });
+  }
+
+  // Solo selects: aplicar ao cambiar no form onChange.
   function handleFormChange(e) {
-    const form = e.currentTarget;
+    if (e.target.tagName !== 'SELECT') return;
+    applyFiltersFromForm(e.currentTarget);
+  }
 
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  // Datas en borrador: cambiar mes no dispara carga (só ao blur / Enter).
+  function handleDateDraftChange(e) {
+    const { name, value } = e.target;
+    setDateDraft((prev) => ({ ...prev, [name]: value }));
+  }
 
-    const isTextInput = e.target.type === 'text';
-    const delay = isTextInput ? 400 : 0;
+  function commitDateFilters() {
+    const form = formRef.current;
+    if (!form) return;
 
-    timeoutRef.current = setTimeout(() => {
-      const formData = new FormData(form);
-      const fechaInicio = formData.get('fechaInicio');
-      const fechaFin = formData.get('fechaFin');
+    const inicio = dateDraft.fechaInicio || '';
+    const fin = dateDraft.fechaFin || '';
+    if (
+      inicio === (filters.fechaInicio || '') &&
+      fin === (filters.fechaFin || '')
+    ) {
+      return;
+    }
 
-      if (isDateRangeInverted(fechaInicio, fechaFin)) {
-        setRangeError('A data "Ata" debe ser posterior ou igual á data "Desde".');
-        return;
-      }
-      setRangeError(null);
+    form.fechaInicio.value = inicio;
+    form.fechaFin.value = fin;
+    applyFiltersFromForm(form);
+  }
 
-      const searchParams = new URLSearchParams();
+  function handleDateFocus() {
+    editingDatesRef.current = true;
+  }
 
-      for (let [key, value] of formData.entries()) {
-        if (value && value !== 'TODOS' && value !== 'TODAS' && value !== '') {
-          searchParams.set(key, value);
-        }
-      }
+  function handleDateBlur() {
+    editingDatesRef.current = false;
+    if (skipDateBlurCommitRef.current) {
+      skipDateBlurCommitRef.current = false;
+      return;
+    }
+    commitDateFilters();
+  }
 
-      startTransition(() => {
-        router.push(`/?${searchParams.toString()}`);
-      });
-    }, delay);
+  function handleDateKeyDown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      skipDateBlurCommitRef.current = true;
+      commitDateFilters();
+      e.target.blur();
+    }
+  }
+
+  // Texto: buscar ao pulsar Enter ou ao sair do campo (blur).
+  function handleDeferredFilterCommit(e) {
+    const form = formRef.current;
+    if (!form) return;
+
+    const name = e.target.name;
+    const newVal = String(e.target.value ?? '').trim();
+    const urlVal = String(filters[name] ?? '').trim();
+    if (e.type === 'blur' && newVal === urlVal) return;
+
+    applyFiltersFromForm(form);
+  }
+
+  function handleDeferredKeyDown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleDeferredFilterCommit(e);
+      e.target.blur();
+    }
   }
 
   function handleClear() {
+    const today = getLocalTodayISO();
     if (formRef.current) {
-      const today = new Date().toISOString().split('T')[0];
       const form = formRef.current;
       form.tecnico.value = 'TODOS';
       form.fechaInicio.value = today;
@@ -90,6 +175,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
       form.cliente.value = '';
       form.telefono.value = '';
     }
+    setDateDraft({ fechaInicio: today, fechaFin: '' });
     startTransition(() => {
       router.push('/');
     });
@@ -149,9 +235,13 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
             <input
               type="date"
               name="fechaInicio"
-              defaultValue={filters.fechaInicio}
+              value={dateDraft.fechaInicio}
               id="fechaInicio"
+              onFocus={handleDateFocus}
               onClick={(e) => e.target.showPicker()}
+              onChange={handleDateDraftChange}
+              onBlur={handleDateBlur}
+              onKeyDown={handleDateKeyDown}
               style={{ width: '100%', padding: '0.3rem', paddingRight: '1.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem', cursor: 'pointer', outline: 'none' }}
             />
             <span
@@ -170,9 +260,13 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
             <input
               type="date"
               name="fechaFin"
-              defaultValue={filters.fechaFin}
+              value={dateDraft.fechaFin}
               id="fechaFin"
+              onFocus={handleDateFocus}
               onClick={(e) => e.target.showPicker()}
+              onChange={handleDateDraftChange}
+              onBlur={handleDateBlur}
+              onKeyDown={handleDateKeyDown}
               style={{ width: '100%', padding: '0.3rem', paddingRight: '1.8rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem', cursor: 'pointer', outline: 'none' }}
             />
             <span
@@ -207,11 +301,27 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
         </div>
         <div style={{ flex: '2 1 180px' }}>
           <label style={{ display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem' }}>Cliente / Aviso</label>
-          <input type="text" name="cliente" defaultValue={filters.cliente} placeholder="Cli..." style={{ width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem' }} />
+          <input
+            type="text"
+            name="cliente"
+            defaultValue={filters.cliente}
+            placeholder="Cli..."
+            onBlur={handleDeferredFilterCommit}
+            onKeyDown={handleDeferredKeyDown}
+            style={{ width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem' }}
+          />
         </div>
         <div style={{ flex: '1 1 100px' }}>
           <label style={{ display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem' }}>Teléfono</label>
-          <input type="text" name="telefono" defaultValue={filters.telefono} placeholder="Tlf..." style={{ width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem' }} />
+          <input
+            type="text"
+            name="telefono"
+            defaultValue={filters.telefono}
+            placeholder="Tlf..."
+            onBlur={handleDeferredFilterCommit}
+            onKeyDown={handleDeferredKeyDown}
+            style={{ width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-primary)', fontSize: '0.75rem' }}
+          />
         </div>
         <div style={{ display: 'flex', gap: '0.2rem' }}>
           <button
