@@ -146,7 +146,7 @@ export default function JobModal({
            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.95rem' }}>
               <div>
                   <strong style={{ display: 'block', marginBottom: '0.2rem', fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Cliente / Local</strong>
-                  {item.cliente || 'Descoñecido'} {item.local ? <span style={{ color: '#4338ca', fontWeight: '600' }}>({item.local})</span> : ''}
+                  {item.cliente || 'Descoñecido'} {item.local ? <span className="job-card-local-name-modal">({item.local})</span> : ''}
                   {direccionCompleta && (
                     <div style={{ marginTop: '0.6rem', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '0.1rem', background: 'var(--bg-color)', padding: '0.8rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
                       <div style={{ fontWeight: '600' }}>{direccionCompleta}</div>

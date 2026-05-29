@@ -29,6 +29,7 @@ export default function JobCard({
       case 'PM': return '#6792FF'; // Puesta en marcha
       case 'VT': return '#64FF95'; // Visitas
       case 'IN': return '#E4A2F6'; // Recados
+      case 'COT': return '#FFD000'; // Consulta con OT
       default: return '#FF7052';   // Avisos / Resto
     }
   };
@@ -175,15 +176,7 @@ export default function JobCard({
               <div style={{ fontWeight: '600', lineHeight: '1.2' }}>
                 <div style={{ marginBottom: '0.1rem' }}>{item.cliente}</div>
                 {isRealClientDifferent && (
-                  <div style={{ 
-                    color: '#4338ca', 
-                    fontSize: '0.65rem', 
-                    fontWeight: '500',
-                    background: 'rgba(67, 56, 202, 0.05)',
-                    padding: '1px 4px',
-                    borderRadius: '3px',
-                    display: 'inline-block'
-                  }}>
+                  <div className="job-card-local-name">
                     {item.local}
                   </div>
                 )}
