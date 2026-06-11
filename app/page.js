@@ -113,13 +113,9 @@ async function getMetadata(filters = {}) {
     }
     tecQuery += ' ORDER BY comercial';
 
-    const [rTecnicos, rPrioridades] = await Promise.all([
-      tecRequest.query(tecQuery),
-      pool.request().query("SELECT DISTINCT prioridad FROM tgm_monitorizacion WITH (NOLOCK) WHERE prioridad IS NOT NULL ORDER BY prioridad")
-    ]);
-    
+    const rTecnicos = await tecRequest.query(tecQuery);
+
     const recTecnicos = rTecnicos.recordset || [];
-    const recPrioridades = rPrioridades.recordset || [];
 
     const allTecnicos = recTecnicos.map(r => ({ 
       abbr: r.abreviatura ? String(r.abreviatura).trim() : '', 
@@ -132,8 +128,9 @@ async function getMetadata(filters = {}) {
     return {
       tecnicos: allTecnicos,
       tipos: TIPOS_ORDEN,
-      // Escala TGM: 1=baixa, 2=media, 3=alta
-      prioridades: recPrioridades.map(r => r.prioridad).filter(p => p != null && p >= 1 && p <= 3).sort((a, b) => a - b)
+      // Escala TGM fixa 1=baixa, 2=media, 3=alta: evita un SELECT DISTINCT
+      // sobre a vista enteira (~1s) en cada carga
+      prioridades: [1, 2, 3]
     };
   } catch (error) {
     console.error("Error obteniendo metadatos:", error.message);
@@ -154,18 +151,11 @@ const SQL_COLUMN_GROUPS = {
     'm.fecha', 'm.hora', 'm.tiempo_total', 'm.tiempo_previsto',
     'm.comercial', 'm.abreviatura', 'm.tipo', 'm.prioridad',
     'm.texto', 'm.observaciones', 'm.gps',
-    'm.foto1', 'm.foto2', 'm.foto3', 'm.foto4',
     'm.solucion', 'm.asistencia',
   ],
-  // Datos extendidos desde TGM_ORDENES_MANTENIMIENTO_DIA (alias d): dirección y preaviso
-  ordenDia: [
-    'd.DireccionCliente', 'd.TelefonoPreavisoCliente', 'd.LocalidadCliente',
-  ],
-  // FACCustomer (c) + GENState (s): código postal y provincia textual
-  ubicacion: [
-    'c.ZipCode',
-    's.Description as Provincia',
-  ],
+  // Dirección/preaviso/CP/provincia: cárganse baixo demanda en /api/ficha
+  // ao abrir o modal. O JOIN coa vista TGM_ORDENES_MANTENIMIENTO_DIA custa
+  // ~800ms por consulta de lista; sen el, ~50ms.
   // Pedido (al final por compatibilidad con el orden histórico de la query)
   extras: ['m.pedido'],
 };
@@ -187,11 +177,8 @@ async function JobBoard({ filters, limit, isTodayView }) {
   try {
     const pool = await getDbConnection();
     const queryLimit = getEffectiveQueryLimit(limit, filters);
-    let query = `SELECT TOP ${queryLimit} ${SQL_COLUMNS} 
+    let query = `SELECT TOP ${queryLimit} ${SQL_COLUMNS}
                  FROM tgm_monitorizacion m WITH (NOLOCK)
-                 LEFT JOIN TGM_ORDENES_MANTENIMIENTO_DIA d WITH (NOLOCK) ON m.asistencia = d.CodOrdenMantenimiento 
-                 LEFT JOIN FACCustomer c WITH (NOLOCK) ON d.CodCliente = c.CodCustomer AND d.CodCompany = c.CodCompany
-                 LEFT JOIN GENState s WITH (NOLOCK) ON c.IDState = s.IDState
                  ${OUTER_APPLY_WARNING_CLIENT}
                  WHERE 1=1`;
     const request = pool.request();
@@ -373,13 +360,8 @@ function JobCardWrapper({ item, index, extraPhotos }) {
     else if (item.tiempo_total < item.tiempo_previsto) timeColor = '#10b981';
   }
 
-  // Use extraPhotos if available, otherwise fallback to legacy columns
-  let rawPhotos = [];
-  if (extraPhotos && extraPhotos.length > 0) {
-    rawPhotos = extraPhotos;
-  } else {
-    rawPhotos = [item.foto1, item.foto2, item.foto3, item.foto4].filter(f => f && f !== '');
-  }
+  // Fotos: única fonte é TGM_MONITORIZACION_FOTOS (foto1-4 da vista eliminadas por IT)
+  const rawPhotos = extraPhotos && extraPhotos.length > 0 ? extraPhotos : [];
 
   const photos = rawPhotos.map(p => ({
     url: `/api/images?path=${encodeURIComponent(p)}`,
@@ -396,11 +378,6 @@ function JobCardWrapper({ item, index, extraPhotos }) {
       index={index}
       item={{...item, local: cleanLocal, cliente: cleanCliente}}
       asistencia={item.asistencia}
-      direccionCompleta={item.DireccionCliente}
-      telefonoPreaviso={item.TelefonoPreavisoCliente}
-      zipCode={item.ZipCode}
-      provincia={item.Provincia}
-      localidadCliente={item.LocalidadCliente}
       timeVal={formatTime(item.tiempo_total)}
       estTimeVal={formatTime(item.tiempo_previsto)}
       solutionVal={item.solucion || 'Pendente'}

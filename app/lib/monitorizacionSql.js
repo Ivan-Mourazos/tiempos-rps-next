@@ -2,6 +2,10 @@
  * SQL para resolver cliente desde aviso/warning.
  * OUTER APPLY TOP 1 evita o erro "Subquery returned more than 1 value"
  * cando hai varias filas en _MANMaintenanceWarning_Custom por aviso.
+ *
+ * CodCompany = '001' (mesma empresa que filtra a vista TGM_MONITORIZACION):
+ * necesario para que SQL Server use o índice IX_MANMaintenanceWarning
+ * (CodCompany, MaintenanceWarningCode). Sen el: scan, ~4x máis lento.
  */
 
 export const OUTER_APPLY_WARNING_CLIENT = `
@@ -18,7 +22,7 @@ OUTER APPLY (
     ON wcc.IDCliente = p2w.IDPotentialCustomer
   LEFT JOIN FACPotentialCustomerSL p3w WITH (NOLOCK)
     ON wcc.IDClientePotencial = p3w.IDPotentialCustomer
-  WHERE wcx.MaintenanceWarningCode = m.aviso
+  WHERE wcx.CodCompany = '001' AND wcx.MaintenanceWarningCode = m.aviso
   ORDER BY wcc.IDMaintenanceWarning
 ) warnCli`;
 
@@ -47,7 +51,7 @@ export function buildClienteWarningExistsClause(paramNames) {
       ON wccf.IDCliente = p2f.IDPotentialCustomer
     LEFT JOIN FACPotentialCustomerSL p3f WITH (NOLOCK)
       ON wccf.IDClientePotencial = p3f.IDPotentialCustomer
-    WHERE wcf.MaintenanceWarningCode = m.aviso
+    WHERE wcf.CodCompany = '001' AND wcf.MaintenanceWarningCode = m.aviso
     AND (${wordConditions})
   )`;
 }

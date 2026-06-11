@@ -8,14 +8,15 @@ import JobModal from './JobModal';
 import ImageCarousel from './ImageCarousel';
 import PdfModal from './PdfModal';
 
-export default function JobCard({ 
-  item, index, timeVal, estTimeVal, solutionVal, 
-  tecnicoVal, avisoCompleto, obsVal, 
+export default function JobCard({
+  item, index, timeVal, estTimeVal, solutionVal,
+  tecnicoVal, avisoCompleto, obsVal,
   timeColor, gpsParts, photos, isRealClientDifferent, formattedDate,
-  asistencia, direccionCompleta, telefonoPreaviso,
-  zipCode, provincia, localidadCliente
+  asistencia
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Dirección/preaviso/CP/provincia: baixo demanda ao abrir Ficha (/api/ficha)
+  const [fichaExtra, setFichaExtra] = useState(null);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -55,6 +56,12 @@ export default function JobCard({
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
+    if (!fichaExtra && asistencia) {
+      fetch(`/api/ficha?asistencia=${encodeURIComponent(String(asistencia).trim())}`)
+        .then(r => (r.ok ? r.json() : {}))
+        .then(data => setFichaExtra(data || {}))
+        .catch(() => setFichaExtra({}));
+    }
   };
   
   const handleOpenLightbox = (e, index) => {
@@ -431,11 +438,11 @@ export default function JobCard({
                 solutionVal={solutionVal}
                 formattedDate={formattedDate}
                 asistencia={asistencia}
-                direccionCompleta={direccionCompleta}
-                telefonoPreaviso={telefonoPreaviso}
-                zipCode={zipCode}
-                provincia={provincia}
-                localidadCliente={localidadCliente}
+                direccionCompleta={fichaExtra?.DireccionCliente}
+                telefonoPreaviso={fichaExtra?.TelefonoPreavisoCliente}
+                zipCode={fichaExtra?.ZipCode}
+                provincia={fichaExtra?.Provincia}
+                localidadCliente={fichaExtra?.LocalidadCliente}
               />
             )}
             {isLightboxOpen && (
