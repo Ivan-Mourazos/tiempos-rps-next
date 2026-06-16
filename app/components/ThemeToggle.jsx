@@ -23,9 +23,10 @@ export default function ThemeToggle() {
       className="theme-toggle-btn"
       onClick={toggleTheme}
       aria-pressed={isDark}
+      aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo escuro'}
+      title={isDark ? 'Modo Claro' : 'Modo Escuro'}
     >
       {isDark ? <Sun size={18} /> : <Moon size={18} />}
-      {isDark ? 'Modo Claro' : 'Modo Escuro'}
     </button>
   );
 }

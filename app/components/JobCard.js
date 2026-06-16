@@ -37,6 +37,23 @@ export default function JobCard({
 
   const typeColor = getTypeColor(item.tipo);
 
+  // Texto contrastante (WCAG): elige negro/blanco según luminancia del fondo.
+  // Los colores de tipo son pasteles claros (verde, amarillo, rosa) donde el
+  // blanco era ilegible (~1.4:1); aquí gana el texto oscuro.
+  const getContrastText = (hex) => {
+    const c = String(hex).replace('#', '');
+    const r = parseInt(c.substring(0, 2), 16) / 255;
+    const g = parseInt(c.substring(2, 4), 16) / 255;
+    const b = parseInt(c.substring(4, 6), 16) / 255;
+    const lin = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    const cWhite = 1.05 / (L + 0.05);
+    const cBlack = (L + 0.05) / 0.05;
+    return cBlack >= cWhite ? '#1a1a1a' : '#ffffff';
+  };
+
+  const badgeTextColor = getContrastText(typeColor);
+
   useEffect(() => {
     setMounted(true);
     checkScroll();
@@ -148,21 +165,21 @@ export default function JobCard({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderRight: '1px solid var(--border-color)', paddingRight: '0.6rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                <strong style={{ 
-                   fontSize: '0.9rem', 
-                   color: 'white', 
-                   background: typeColor, 
-                   padding: '2px 8px', 
+                <strong style={{
+                   fontSize: '0.9rem',
+                   color: badgeTextColor,
+                   background: typeColor,
+                   padding: '2px 8px',
                    borderRadius: '4px',
-                   textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                   textShadow: badgeTextColor === '#ffffff' ? '0 1px 2px rgba(0,0,0,0.2)' : 'none'
                 }}>{avisoCompleto}</strong>
-                <span style={{ 
-                   fontSize: '0.65rem', 
-                   color: 'var(--brand-orange)', 
-                   fontWeight: '800', 
-                   background: 'rgba(234,88,12,0.1)', 
-                   border: '1px solid rgba(234,88,12,0.35)',
-                   padding: '2px 7px', 
+                <span style={{
+                   fontSize: '0.65rem',
+                   color: 'var(--solution-fg)',
+                   fontWeight: '800',
+                   background: 'var(--solution-bg)',
+                   border: '1px solid var(--solution-border)',
+                   padding: '2px 7px',
                    borderRadius: '4px',
                    textTransform: 'uppercase',
                    letterSpacing: '0.03em'
@@ -200,13 +217,13 @@ export default function JobCard({
 
           {/* COLUMNA 2: Descrición Técnica */}
           <div style={{ borderRight: '1px solid var(--border-color)', paddingRight: '0.6rem' }}>
-            <strong style={{ display: 'block', fontSize: '0.55rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.3rem' }}>Descrición Técnica</strong>
+            <strong style={{ display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.3rem', letterSpacing: '0.03em' }}>Descrición Técnica</strong>
             {item.texto ? (
               <div style={{ fontSize: '0.75rem', lineHeight: '1.2' }}>
                 <ExpandableText text={item.texto} maxLines={6} onExpand={handleOpenModal} />
               </div>
             ) : (
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.4, fontStyle: 'italic', height: '100%', display: 'flex', alignItems: 'center' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.7, fontStyle: 'italic', height: '100%', display: 'flex', alignItems: 'center' }}>
                 Sen descrición técnica
               </div>
             )}
@@ -214,13 +231,13 @@ export default function JobCard({
 
           {/* COLUMNA 3: Observacións */}
           <div style={{ borderRight: '1px solid var(--border-color)', paddingRight: '0.6rem' }}>
-            <strong style={{ display: 'block', fontSize: '0.55rem', textTransform: 'uppercase', color: '#3b82f6', marginBottom: '0.3rem' }}>Observacións</strong>
+            <strong style={{ display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--accent-obs)', marginBottom: '0.3rem', letterSpacing: '0.03em' }}>Observacións</strong>
             {obsVal ? (
               <div style={{ fontSize: '0.75rem', lineHeight: '1.2' }}>
                 <ExpandableText text={obsVal} maxLines={6} onExpand={handleOpenModal} />
               </div>
             ) : (
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.4, fontStyle: 'italic', height: '100%', display: 'flex', alignItems: 'center' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.7, fontStyle: 'italic', height: '100%', display: 'flex', alignItems: 'center' }}>
                 Sen observacións
               </div>
             )}

@@ -2,6 +2,7 @@ import sql from 'mssql';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import ThemeToggle from './components/ThemeToggle';
+import ClearFiltersButton from './components/ClearFiltersButton';
 import FilterForm from './components/FilterForm';
 import AutoRefresh from './components/AutoRefresh';
 import JobCard from './components/JobCard';
@@ -356,8 +357,8 @@ function JobCardWrapper({ item, index, extraPhotos }) {
   
   let timeColor = 'var(--text-primary)';
   if (item.tiempo_previsto && item.tiempo_total) {
-    if (item.tiempo_total > item.tiempo_previsto) timeColor = '#ef4444'; 
-    else if (item.tiempo_total < item.tiempo_previsto) timeColor = '#10b981';
+    if (item.tiempo_total > item.tiempo_previsto) timeColor = 'var(--time-over)';
+    else if (item.tiempo_total < item.tiempo_previsto) timeColor = 'var(--time-under)';
   }
 
   // Fotos: única fonte é TGM_MONITORIZACION_FOTOS (foto1-4 da vista eliminadas por IT)
@@ -420,16 +421,32 @@ export default async function Page({ searchParams }) {
     <FilterNavProvider>
     <div className="dashboard-container">
       <AutoRefresh interval={60000} />
-      <header className="header" style={{ padding: '0.8rem 1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-          <h1 style={{ fontSize: '1.25rem' }}>Monitorización Tiempos RPS Next</h1>
-          <ThemeToggle />
+      <header className="header">
+        <div style={{ display: 'flex', alignItems: 'center', maxWidth: '1600px', margin: '0 auto' }}>
+          {/* Logo */}
+          <div
+            className="header-title-logo"
+            role="img"
+            aria-label="Monitorización Tiempos RPS Next"
+            style={{ flexShrink: 0, borderRight: '1px solid var(--border-strong)', paddingRight: '1rem', marginLeft: '-14px' }}
+          >
+            <img src="/monitorizacion_claro.PNG" alt="" className="logo-light" />
+            <img src="/monitorizacion_oscuro.PNG" alt="" className="logo-dark" />
+          </div>
+
+          {/* Filtros */}
+          <div style={{ flex: '1 1 0', minWidth: 0, padding: '0 1.25rem' }}>
+            <Suspense fallback={<div className="filter-placeholder" aria-hidden="true" style={{ height: '55px' }} />}>
+              <FilterWrapper filters={filters} metadataPromise={metadataPromise} />
+            </Suspense>
+          </div>
+
+          {/* Acciones */}
+          <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '0.4rem', borderLeft: '1px solid var(--border-strong)', paddingLeft: '1rem' }}>
+            <ClearFiltersButton />
+            <ThemeToggle />
+          </div>
         </div>
-        
-        {/* Los filtros aparecen en cuanto el metadata está listo, pero no bloquean el resto */}
-        <Suspense fallback={<div className="filter-placeholder" aria-hidden="true" />}>
-          <FilterWrapper filters={filters} metadataPromise={metadataPromise} />
-        </Suspense>
       </header>
 
       <main className="main-content" style={{ padding: '0.5rem 1rem' }}>

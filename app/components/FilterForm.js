@@ -2,11 +2,22 @@
 
 import { useRouter } from 'next/navigation';
 import { useRef, useEffect, useState } from 'react';
-import { Calendar, Trash2 } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { getLocalTodayISO, isDateRangeInverted } from '../lib/dateRange';
 import { formatPrioridadOption, sortPrioridadesForFilter } from '../lib/prioridad';
 import { useFilterNav } from './FilterNavContext';
 import DateFilterField from './DateFilterField';
+import CustomSelect from './CustomSelect';
+
+function formatTecnicoName(full) {
+  if (!full) return full;
+  const [apellidos, nombres] = full.split(',').map(s => s.trim());
+  if (!nombres) return full;
+  const primerNombre = nombres.split(' ')[0];
+  const primerApellido = apellidos.split(' ')[0];
+  const toTitle = s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  return `${toTitle(primerNombre)} ${toTitle(primerApellido)}`;
+}
 
 export default function FilterForm({ filters, metadata, tipoLabels }) {
   const router = useRouter();
@@ -26,9 +37,6 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
       }
     };
 
-    syncInput('tecnico', filters.tecnico || 'TODOS');
-    syncInput('tipo', filters.tipo || 'TODOS');
-    syncInput('prioridad', filters.prioridad || 'TODAS');
     syncInput('cliente', filters.cliente);
     syncInput('telefono', filters.telefono);
     setRangeError(null);
@@ -80,10 +88,8 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
     });
   }
 
-  // Solo selects: aplicar ao cambiar no form onChange.
-  function handleFormChange(e) {
-    if (e.target.tagName !== 'SELECT') return;
-    applyFiltersFromForm(e.currentTarget);
+  function handleCustomSelectChange() {
+    applyFiltersFromForm(formRef.current);
   }
 
   function handleDateSelect(name, isoDate) {
@@ -119,18 +125,11 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
     }
   }
 
-  function handleClear() {
-    if (formRef.current) {
-      const form = formRef.current;
-      form.tecnico.value = 'TODOS';
-      form.tipo.value = 'TODOS';
-      form.prioridad.value = 'TODAS';
-      form.cliente.value = '';
-      form.telefono.value = '';
-    }
-    startTransition(() => {
-      router.push('/');
-    });
+  function handleSetToday() {
+    const form = formRef.current;
+    if (!form) return;
+    const today = getLocalTodayISO();
+    applyFiltersFromForm(form, { fechaInicio: today, fechaFin: '' });
   }
 
   return (
@@ -143,111 +142,72 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
 
       <form
         ref={formRef}
-        onChange={handleFormChange}
         onSubmit={(e) => e.preventDefault()}
         style={{
           display: 'flex',
           flexWrap: 'wrap',
           gap: '0.4rem',
-          padding: '0.4rem',
-          background: 'var(--filter-panel-bg)',
-          borderRadius: '6px',
-          border: '1px solid var(--border-color)',
           alignItems: 'flex-end',
           transition: 'all 0.2s',
         }}
       >
-        <div style={{ flex: '1 1 140px' }}>
-          <label style={{ display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem' }}>Técnico</label>
-          <select name="tecnico" defaultValue={filters.tecnico} style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.75rem' }}>
-            <option value="TODOS">TODOS</option>
-            {metadata.tecnicos.map((t) => (
-              <option key={t.abbr} value={t.abbr}>
-                {t.full || t.abbr}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div style={{ flex: '0 0 120px' }}>
-          <label style={{ display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-            <Calendar size={10} /> DENDE
-          </label>
-          <DateFilterField
-            id="fechaInicio"
-            name="fechaInicio"
-            value={filters.fechaInicio || ''}
-            placeholder="Día"
-            onSelect={(iso) => handleDateSelect('fechaInicio', iso)}
-          />
-        </div>
-        <div style={{ flex: '0 0 120px' }}>
-          <label style={{ display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-            <Calendar size={10} /> ATA
-          </label>
-          <DateFilterField
-            id="fechaFin"
-            name="fechaFin"
-            value={filters.fechaFin || ''}
-            placeholder="Opcional"
-            allowClear
-            onSelect={(iso) => handleDateSelect('fechaFin', iso)}
-          />
-        </div>
-        <div style={{ flex: '1 1 140px' }}>
-          <label style={{ display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem' }}>Tipo</label>
-          <select name="tipo" defaultValue={filters.tipo} style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.75rem' }}>
-            <option value="TODOS">TODOS</option>
-            {metadata.tipos.map((t) => (
-              <option key={t} value={t}>
-                {tipoLabels[t] || t}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div style={{ flex: '1 1 80px' }}>
-          <label style={{ display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem' }}>Prioridade</label>
-          <select name="prioridad" defaultValue={filters.prioridad} style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.75rem' }}>
-            <option value="TODAS">TODAS</option>
-            {sortPrioridadesForFilter(metadata.prioridades).map((p) => (
-              <option key={p} value={p}>
-                {formatPrioridadOption(p)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div style={{ flex: '2 1 180px' }}>
-          <label style={{ display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem' }}>Cliente / Aviso</label>
-          <input
-            type="text"
-            name="cliente"
-            defaultValue={filters.cliente}
-            placeholder="Cli..."
-            onBlur={handleDeferredFilterCommit}
-            onKeyDown={handleDeferredKeyDown}
-            style={{ width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.75rem' }}
-          />
-        </div>
-        <div style={{ flex: '1 1 100px' }}>
-          <label style={{ display: 'block', fontSize: '0.6rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.1rem' }}>Teléfono</label>
-          <input
-            type="text"
-            name="telefono"
-            defaultValue={filters.telefono}
-            placeholder="Tlf..."
-            onBlur={handleDeferredFilterCommit}
-            onKeyDown={handleDeferredKeyDown}
-            style={{ width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.75rem' }}
-          />
-        </div>
-        <div style={{ display: 'flex', gap: '0.2rem' }}>
+        {/* Grupo fechas: DENDE + ATA + HOXE agrupados visualmente */}
+        <div style={{
+          display: 'flex',
+          gap: '0.3rem',
+          alignItems: 'flex-end',
+          padding: '0.3rem 0.5rem',
+          border: '1px solid var(--border-color)',
+          borderRadius: '6px',
+          background: 'rgba(255,255,255,0.03)',
+          flexShrink: 0,
+        }}>
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>
+              <Calendar size={10} /> DENDE
+            </label>
+            <DateFilterField
+              id="fechaInicio"
+              name="fechaInicio"
+              value={filters.fechaInicio || ''}
+              placeholder="Día"
+              onSelect={(iso) => handleDateSelect('fechaInicio', iso)}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>
+              <Calendar size={10} /> ATA
+            </label>
+            <DateFilterField
+              id="fechaFin"
+              name="fechaFin"
+              value={filters.fechaFin || ''}
+              placeholder="Opcional"
+              allowClear
+              onSelect={(iso) => handleDateSelect('fechaFin', iso)}
+            />
+          </div>
           <button
             type="button"
-            onClick={handleClear}
-            style={{ padding: '0.4rem 0.6rem', background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', fontSize: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer', transition: 'all 0.2s' }}
+            onClick={handleSetToday}
+            style={{
+              alignSelf: 'flex-end',
+              padding: '0.4rem 0.6rem',
+              background: 'transparent',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '4px',
+              fontSize: '0.65rem',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+            }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
-              e.currentTarget.style.color = '#ef4444';
-              e.currentTarget.style.borderColor = '#ef4444';
+              e.currentTarget.style.background = 'var(--brand-glow)';
+              e.currentTarget.style.color = 'var(--brand-orange)';
+              e.currentTarget.style.borderColor = 'var(--brand-orange)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = 'transparent';
@@ -255,8 +215,92 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
               e.currentTarget.style.borderColor = 'var(--border-color)';
             }}
           >
-            <Trash2 size={12} /> LIMPIAR
+            HOXE
           </button>
+        </div>
+        {/* Grupo selects: Técnico + Tipo + Prioridade */}
+        <div style={{
+          display: 'flex',
+          gap: '0.3rem',
+          alignItems: 'flex-end',
+          padding: '0.3rem 0.5rem',
+          border: '1px solid var(--border-color)',
+          borderRadius: '6px',
+          background: 'rgba(255,255,255,0.03)',
+          flex: '3 1 300px',
+        }}>
+          <div style={{ flex: '1 1 110px' }}>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Técnico</label>
+            <CustomSelect
+              name="tecnico"
+              value={filters.tecnico || 'TODOS'}
+              options={[
+                { value: 'TODOS', label: 'TODOS' },
+                ...metadata.tecnicos.map(t => ({ value: t.abbr, label: t.full ? formatTecnicoName(t.full) : t.abbr })),
+              ]}
+              onSelect={handleCustomSelectChange}
+            />
+          </div>
+          <div style={{ flex: '1 1 110px' }}>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Tipo</label>
+            <CustomSelect
+              name="tipo"
+              value={filters.tipo || 'TODOS'}
+              options={[
+                { value: 'TODOS', label: 'TODOS' },
+                ...metadata.tipos.map(t => ({ value: t, label: tipoLabels[t] || t })),
+              ]}
+              onSelect={handleCustomSelectChange}
+            />
+          </div>
+          <div style={{ flex: '1 1 80px' }}>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Prioridade</label>
+            <CustomSelect
+              name="prioridad"
+              value={filters.prioridad || 'TODAS'}
+              options={[
+                { value: 'TODAS', label: 'TODAS' },
+                ...sortPrioridadesForFilter(metadata.prioridades).map(p => ({ value: p, label: formatPrioridadOption(p) })),
+              ]}
+              onSelect={handleCustomSelectChange}
+            />
+          </div>
+        </div>
+        {/* Grupo busca: Cliente + Teléfono */}
+        <div style={{
+          display: 'flex',
+          gap: '0.3rem',
+          alignItems: 'flex-end',
+          padding: '0.3rem 0.5rem',
+          border: '1px solid var(--border-color)',
+          borderRadius: '6px',
+          background: 'rgba(255,255,255,0.03)',
+          flex: '3 1 240px',
+        }}>
+          <div style={{ flex: '2 1 150px' }}>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Cliente / Aviso</label>
+            <input
+              type="text"
+              name="cliente"
+              defaultValue={filters.cliente}
+              placeholder="Cli..."
+              onBlur={handleDeferredFilterCommit}
+              onKeyDown={handleDeferredKeyDown}
+              style={{ width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.75rem' }}
+            />
+          </div>
+          <div style={{ flex: '1 1 90px' }}>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Teléfono</label>
+            <input
+              type="text"
+              name="telefono"
+              defaultValue={filters.telefono}
+              placeholder="Tlf..."
+              onBlur={handleDeferredFilterCommit}
+              onKeyDown={handleDeferredKeyDown}
+              style={{ width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.75rem' }}
+            />
+          </div>
         </div>
       </form>
     </>

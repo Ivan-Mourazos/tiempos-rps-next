@@ -14,6 +14,18 @@ export default function JobModal({
   const [mounted, setMounted] = useState(false);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
+  // Texto contrastante (WCAG) sobre el color de tipo, igual que en JobCard.
+  const getContrastText = (hex) => {
+    const c = String(hex).replace('#', '');
+    const r = parseInt(c.substring(0, 2), 16) / 255;
+    const g = parseInt(c.substring(2, 4), 16) / 255;
+    const b = parseInt(c.substring(4, 6), 16) / 255;
+    const lin = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    return (L + 0.05) / 0.05 >= 1.05 / (L + 0.05) ? '#1a1a1a' : '#ffffff';
+  };
+  const badgeTextColor = getContrastText(typeColor);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -78,7 +90,15 @@ export default function JobModal({
       >
         <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-             <strong style={{ fontSize: '1.3rem', color: typeColor }}>{avisoCompleto}</strong>
+             <strong style={{
+                fontSize: '1.3rem',
+                color: badgeTextColor,
+                background: typeColor,
+                padding: '2px 10px',
+                borderRadius: '6px',
+                width: 'fit-content',
+                textShadow: badgeTextColor === '#ffffff' ? '0 1px 2px rgba(0,0,0,0.2)' : 'none'
+             }}>{avisoCompleto}</strong>
              <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}><User size={16} /> {tecnicoVal}</span>
                  <span style={{ color: 'var(--border-color)', margin: '0 0.2rem' }}>|</span>
@@ -127,14 +147,14 @@ export default function JobModal({
                  <div style={{ fontSize: '1.1rem', fontWeight: '900', color: timeColor, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                     <Clock size={20} /> {timeVal} {!!item.tiempo_previsto ? <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}>(Est: {estTimeVal})</span> : ''}
                  </div>
-                 <div style={{ 
-                    fontSize: '0.9rem', 
-                    fontWeight: '900', 
-                    color: typeColor, 
-                    background: `${typeColor}1a`, 
-                    padding: '0.4rem 0.8rem', 
-                    borderRadius: '4px', 
-                    border: `1px solid ${typeColor}33`, 
+                 <div style={{
+                    fontSize: '0.9rem',
+                    fontWeight: '900',
+                    color: 'var(--text-primary)',
+                    background: `${typeColor}1a`,
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: '4px',
+                    border: `1px solid ${typeColor}66`,
                     textTransform: 'uppercase',
                     display: 'inline-block',
                     width: 'fit-content'
@@ -181,8 +201,8 @@ export default function JobModal({
            </div>
 
            {item.observaciones && (
-               <div style={{ padding: '1rem', borderLeft: '4px solid #3b82f6', background: 'rgba(59, 130, 246, 0.05)', fontSize: '0.95rem', color: 'var(--text-primary)', borderRadius: '0 4px 4px 0' }}>
-                 <strong style={{ display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', color: '#3b82f6', marginBottom: '0.6rem' }}>Observacións IMPORTANTES</strong>
+               <div style={{ padding: '1rem', borderLeft: '4px solid var(--accent-obs)', background: 'rgba(59, 130, 246, 0.05)', fontSize: '0.95rem', color: 'var(--text-primary)', borderRadius: '0 4px 4px 0' }}>
+                 <strong style={{ display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--accent-obs)', marginBottom: '0.6rem' }}>Observacións IMPORTANTES</strong>
                  <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{item.observaciones}</div>
                </div>
            )}
