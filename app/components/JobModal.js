@@ -33,224 +33,202 @@ export default function JobModal({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     }
     return () => {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     };
   }, [isOpen]);
 
   if (!mounted) return null;
-  
+
+  const hasMedia = photos.length > 0 || !!gpsParts;
+
   return (
-    <div 
-      className={`modal-overlay ${isOpen ? 'active' : ''}`}
+    <div
       style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        position: 'fixed', inset: 0, zIndex: 9999,
         display: isOpen ? 'flex' : 'none',
-        justifyContent: 'flex-end',
-        zIndex: 9999,
-        transition: 'opacity 0.3s'
+        alignItems: 'center', justifyContent: 'center',
       }}
     >
-      <div 
+      {/* Backdrop */}
+      <div
         onClick={onClose}
         style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'rgba(0,0,0,0.4)',
-          backdropFilter: 'blur(3px)',
-          opacity: isOpen ? 1 : 0,
-          transition: 'opacity 0.3s ease'
+          position: 'absolute', inset: 0,
+          background: 'rgba(0,0,0,0.55)',
+          backdropFilter: 'blur(4px)',
         }}
       />
-      
-      <div 
-        style={{
-          position: 'relative',
-          width: '50vw',
-          minWidth: '400px',
-          maxWidth: '600px',
-          height: '100%',
-          background: 'var(--bg-color)',
-          borderLeft: `5px solid ${typeColor}`,
-          boxShadow: '-4px 0 20px rgba(0,0,0,0.1)',
-          transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflowY: 'auto'
-        }}
-      >
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-             <strong style={{
-                fontSize: '1.3rem',
-                color: badgeTextColor,
-                background: typeColor,
-                padding: '2px 10px',
-                borderRadius: '6px',
-                width: 'fit-content',
-                textShadow: badgeTextColor === '#ffffff' ? '0 1px 2px rgba(0,0,0,0.2)' : 'none'
-             }}>{avisoCompleto}</strong>
-             <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}><User size={16} /> {tecnicoVal}</span>
-                 <span style={{ color: 'var(--border-color)', margin: '0 0.2rem' }}>|</span>
-                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: 'var(--text-secondary)' }}><Calendar size={16} /> {formattedDate}</span>
-             </div>
+
+      {/* Panel centrado */}
+      <div style={{
+        position: 'relative',
+        width: 'min(88vw, 1100px)',
+        height: 'min(88vh, 820px)',
+        background: 'var(--surface-color)',
+        borderRadius: '12px',
+        borderTop: `4px solid ${typeColor}`,
+        boxShadow: '0 24px 64px rgba(0,0,0,0.45)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}>
+
+        {/* CABECEIRA */}
+        <div style={{
+          padding: '1rem 1.25rem',
+          borderBottom: '1px solid var(--border-color)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem',
+          flexShrink: 0,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', minWidth: 0 }}>
+            <strong style={{
+              fontSize: '1.1rem', color: badgeTextColor, background: typeColor,
+              padding: '2px 10px', borderRadius: '6px', whiteSpace: 'nowrap',
+              textShadow: badgeTextColor === '#ffffff' ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
+            }}>{avisoCompleto}</strong>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+              <User size={13} /> {tecnicoVal}
+            </span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>·</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              <Calendar size={13} /> {formattedDate}
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '1rem', fontWeight: '900', color: timeColor }}>
+              <Clock size={14} /> {timeVal}
+              {!!item.tiempo_previsto && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}>(Est: {estTimeVal})</span>}
+            </span>
+            <span style={{
+              fontSize: '0.7rem', fontWeight: '800',
+              color: 'var(--solution-fg)', background: 'var(--solution-bg)',
+              border: '1px solid var(--solution-border)',
+              padding: '2px 7px', borderRadius: '4px',
+              textTransform: 'uppercase', letterSpacing: '0.03em', whiteSpace: 'nowrap',
+            }}>{solutionVal}</span>
           </div>
-          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
             {item.pedido && (
-              <button 
+              <button
                 onClick={() => setIsPdfModalOpen(true)}
                 style={{
-                  background: 'var(--brand-orange)',
-                  color: 'white',
-                  border: '1px solid var(--brand-orange)',
-                  borderRadius: '6px',
-                  padding: '0.4rem 1rem',
-                  fontSize: '0.8rem',
-                  fontWeight: '700',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  boxShadow: '0 2px 4px rgba(234, 88, 12, 0.2)'
+                  background: 'var(--brand-orange)', color: 'rgba(0,0,0,0.85)',
+                  border: '1px solid var(--brand-orange)', borderRadius: '6px',
+                  padding: '0.35rem 0.9rem', fontSize: '0.75rem', fontWeight: '700',
+                  display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer',
+                  transition: 'opacity 0.2s',
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(234, 88, 12, 0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(234, 88, 12, 0.2)';
-                }}
+                onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                onMouseLeave={e => e.currentTarget.style.opacity = '1'}
               >
-                <FileText size={18} /> PEDIDO
+                <FileText size={14} /> PEDIDO
               </button>
             )}
-            <button onClick={onClose} style={{ background: 'var(--surface-color)', border: '1px solid var(--border-color)', cursor: 'pointer', color: 'var(--text-secondary)', padding: '0.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} aria-label="Cerrar modal">
-              <X size={20} />
+            <button
+              onClick={onClose}
+              className="theme-toggle-btn"
+              aria-label="Cerrar"
+              style={{ padding: '0.4rem' }}
+            >
+              <X size={18} />
             </button>
           </div>
         </div>
 
-        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', background: 'var(--surface-color)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                 <div style={{ fontSize: '1.1rem', fontWeight: '900', color: timeColor, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <Clock size={20} /> {timeVal} {!!item.tiempo_previsto ? <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}>(Est: {estTimeVal})</span> : ''}
-                 </div>
-                 <div style={{
-                    fontSize: '0.9rem',
-                    fontWeight: '900',
-                    color: 'var(--text-primary)',
-                    background: `${typeColor}1a`,
-                    padding: '0.4rem 0.8rem',
-                    borderRadius: '4px',
-                    border: `1px solid ${typeColor}66`,
-                    textTransform: 'uppercase',
-                    display: 'inline-block',
-                    width: 'fit-content'
-                 }}>
-                    {solutionVal}
-                 </div>
-           </div>
-           
-           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.95rem' }}>
-              <div>
-                  <strong style={{ display: 'block', marginBottom: '0.2rem', fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Cliente / Local</strong>
-                  {item.cliente || 'Descoñecido'} {item.local ? <span className="job-card-local-name-modal">({item.local})</span> : ''}
-                  {direccionCompleta && (
-                    <div style={{ marginTop: '0.6rem', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '0.1rem', background: 'var(--bg-color)', padding: '0.8rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                      <div style={{ fontWeight: '600' }}>{direccionCompleta}</div>
-                      <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: '500' }}>
-                        {zipCode && <span>{zipCode} </span>}
-                        {localidadCliente || item.localidad}
-                        {provincia && <span> ({provincia})</span>}
-                      </div>
-                    </div>
-                  )}
+        {/* CORPO: dúas columnas */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: hasMedia ? '1fr 1fr' : '1fr',
+          flex: 1,
+          overflow: 'hidden',
+        }}>
+
+          {/* COLUMNA ESQUERDA — info (scrollable) */}
+          <div style={{
+            overflowY: 'auto', padding: '1.25rem',
+            display: 'flex', flexDirection: 'column', gap: '1.25rem',
+            borderRight: hasMedia ? '1px solid var(--border-color)' : 'none',
+          }}>
+
+            {/* Cliente */}
+            <div>
+              <p style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: '700', marginBottom: '0.3rem', letterSpacing: '0.04em' }}>Cliente / Local</p>
+              <p style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.1rem' }}>
+                {item.cliente || 'Descoñecido'}{item.local ? <> <span className="job-card-local-name-modal">({item.local})</span></> : ''}
+              </p>
+              {(item.Telefono1 || item.Telefono2) && (
+                <p style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                  <Phone size={13} /> {item.Telefono1 || ''}{item.Telefono2 ? ` / ${item.Telefono2}` : ''}
+                </p>
+              )}
+              {direccionCompleta && (
+                <div style={{ marginTop: '0.5rem', padding: '0.6rem 0.8rem', background: 'var(--bg-color)', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                  <p style={{ fontWeight: '600', fontSize: '0.85rem', color: 'var(--text-primary)' }}>{direccionCompleta}</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
+                    {zipCode && <span>{zipCode} </span>}{localidadCliente || item.localidad}{provincia && <span> ({provincia})</span>}
+                  </p>
+                </div>
+              )}
+              {!direccionCompleta && item.localidad && (
+                <p style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                  <MapPin size={13} /> {item.localidad}
+                </p>
+              )}
+            </div>
+
+            {/* Observacións */}
+            {item.observaciones && (
+              <div style={{ padding: '0.75rem 1rem', borderLeft: '3px solid var(--accent-obs)', background: 'rgba(59,130,246,0.08)', borderRadius: '0 6px 6px 0' }}>
+                <p style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--accent-obs)', fontWeight: '700', marginBottom: '0.4rem', letterSpacing: '0.04em' }}>Observacións importantes</p>
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{item.observaciones}</div>
               </div>
-              <div style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.4rem' }}>
-                  {!direccionCompleta && item.localidad && <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><MapPin size={16} /> {item.localidad}</span>}
-                  {(item.Telefono1 || item.Telefono2) && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Phone size={16} /> {item.Telefono1 || ''} {item.Telefono2 ? `/ ${item.Telefono2}` : ''}</span>
-                  )}
-{/* Pre-aviso oculto temporalmente por petición del usuario */}
-                  {/* asistencia && (
-                    <div style={{ marginTop: '0.8rem', padding: '0.6rem', background: 'rgba(234, 88, 12, 0.05)', borderRadius: '6px', border: '1px dashed var(--brand-orange)' }}>
-                      <strong style={{ display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--brand-orange)', marginBottom: '0.2rem' }}>Pre-aviso / Asistencia</strong>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem', alignItems: 'center' }}>
-                        <span style={{ fontWeight: '700' }}>{asistencia}</span>
-                        {telefonoPreaviso && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--brand-orange)', fontWeight: '600' }}>
-                            <Phone size={14} /> {telefonoPreaviso}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ) */}
+            )}
+
+            {/* Descrición técnica */}
+            {item.texto && (
+              <div style={{ padding: '0.75rem 1rem', background: 'var(--surface-elevated)', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                <p style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: '700', marginBottom: '0.4rem', letterSpacing: '0.04em' }}>Descrición Técnica</p>
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{item.texto}</div>
               </div>
-           </div>
+            )}
+          </div>
 
-           {item.observaciones && (
-               <div style={{ padding: '1rem', borderLeft: '4px solid var(--accent-obs)', background: 'rgba(59, 130, 246, 0.05)', fontSize: '0.95rem', color: 'var(--text-primary)', borderRadius: '0 4px 4px 0' }}>
-                 <strong style={{ display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--accent-obs)', marginBottom: '0.6rem' }}>Observacións IMPORTANTES</strong>
-                 <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{item.observaciones}</div>
-               </div>
-           )}
-
-           {item.texto && (
-               <div style={{ padding: '1rem', background: 'var(--bg-color)', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                 <strong style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.6rem', display: 'block' }}>Descrición Técnica</strong>
-                 <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{item.texto}</div>
-               </div>
-           )}
-
-           { (photos.length > 0 || gpsParts) && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' }}>
-                 {photos.length > 0 && (
-                     <div style={{ width: '100%', height: '300px', position: 'relative', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
-                         <div style={{ position: 'absolute', inset: 0 }}>
-                           <ImageCarousel images={photos} />
-                         </div>
-                     </div>
-                 )}
-                 {gpsParts && (
-                     <div style={{ width: '100%', aspectRatio: '16/9', position: 'relative', background: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
-                         <div style={{ position: 'absolute', inset: 0 }}>
-                             <iframe
-                                 width="100%"
-                                 height="100%"
-                                 style={{ border: 0 }}
-                                 loading="lazy"
-                                 allowFullScreen
-                                 referrerPolicy="no-referrer-when-downgrade"
-                                 src={`https://maps.google.com/maps?q=${gpsParts[0]},${gpsParts[1]}&hl=es&z=15&output=embed`}
-                             ></iframe>
-                         </div>
-                     </div>
-                 )}
-              </div>
-           )}
-
-           <div style={{ paddingBottom: '3rem' }}></div>
+          {/* COLUMNA DEREITA — fotos + mapa (só se hai media) */}
+          {hasMedia && (
+            <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', overflow: 'hidden' }}>
+              {photos.length > 0 && (
+                <div style={{ flex: 1, minHeight: 0, borderRadius: '8px', border: '1px solid var(--border-color)', overflow: 'hidden', background: 'var(--bg-color)' }}>
+                  <ImageCarousel images={photos} />
+                </div>
+              )}
+              {gpsParts && (
+                <div style={{ flex: 1, minHeight: 0, borderRadius: '8px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+                  <iframe
+                    width="100%" height="100%"
+                    style={{ border: 0, display: 'block' }}
+                    loading="lazy" allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://maps.google.com/maps?q=${gpsParts[0]},${gpsParts[1]}&hl=es&z=17&t=h&output=embed`}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
       {isPdfModalOpen && (
-         <PdfModal 
-           isOpen={true} 
-           onClose={() => setIsPdfModalOpen(false)} 
-           pdfUrl={item.pedido}
-           title={item.aviso}
-         />
+        <PdfModal
+          isOpen={true}
+          onClose={() => setIsPdfModalOpen(false)}
+          pdfUrl={item.pedido}
+          title={item.aviso}
+        />
       )}
     </div>
   );

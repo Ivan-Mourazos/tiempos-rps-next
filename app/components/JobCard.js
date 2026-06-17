@@ -243,37 +243,35 @@ export default function JobCard({
             )}
           </div>
 
-          {/* COLUMNA 4: Tiempo y Ubicación */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', width: '100%', alignItems: 'center' }}>
-              <div style={{ 
-                fontSize: '0.85rem', fontWeight: '900', color: timeColor, 
-                display: 'flex', flexDirection: 'column', gap: '0.1rem', 
-                background: 'var(--surface-inset)', padding: '0.3rem 0.5rem', 
-                borderRadius: '4px', border: '1px solid var(--border-color)',
-                width: '100%', alignItems: 'center'
-              }}>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                   <Clock size={12} /> {timeVal}
-                 </div>
-                 {!!item.tiempo_previsto && <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}>Est: {estTimeVal}</span>}
+          {/* COLUMNA 4: Tiempo · Ubicación · Botóns */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
+            {/* Tiempo */}
+            <div style={{
+              fontSize: '0.85rem', fontWeight: '900', color: timeColor,
+              display: 'flex', flexDirection: 'column', gap: '0.1rem',
+              width: '100%', alignItems: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                <Clock size={12} /> {timeVal}
               </div>
-
-              {item.localidad && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: 'var(--text-secondary)', width: '100%', justifyContent: 'center' }}>
-                   {mapsUrl ? (
-                      <a href={mapsUrl} target="_blank" rel="noopener noreferrer" title="Ver en Google Maps" style={{ color: '#ef4444', display: 'flex', alignItems: 'center' }}>
-                        <MapPin size={18} fill="#f87171" />
-                      </a>
-                   ) : (
-                      <MapPin size={18} style={{ color: 'gray' }} />
-                   )}
-                   <span style={{ fontWeight: '500', textAlign: 'center' }}>{item.localidad}</span>
-                </div>
-              )}
+              {!!item.tiempo_previsto && <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}>Est: {estTimeVal}</span>}
             </div>
 
-            <div style={{ display: 'flex', gap: '0.4rem', width: '100%', marginTop: 'auto' }}>
+            {/* Ubicación centrada */}
+            {item.localidad ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: 'var(--text-secondary)', width: '100%', justifyContent: 'center' }}>
+                {mapsUrl ? (
+                  <a href={mapsUrl} target="_blank" rel="noopener noreferrer" title="Ver en Google Maps" style={{ color: '#ef4444', display: 'flex', alignItems: 'center' }}>
+                    <MapPin size={18} fill="#f87171" />
+                  </a>
+                ) : (
+                  <MapPin size={18} style={{ color: 'gray' }} />
+                )}
+                <span style={{ fontWeight: '500', textAlign: 'center' }}>{item.localidad}</span>
+              </div>
+            ) : <div />}
+
+            <div style={{ display: 'flex', gap: '0.4rem', width: '100%' }}>
               {item.pedido && (
                 <button 
                   onClick={(e) => {
@@ -283,7 +281,7 @@ export default function JobCard({
                   style={{
                     flex: 1,
                     background: 'var(--brand-orange)',
-                    color: 'white',
+                    color: 'rgba(0,0,0,0.85)',
                     border: '1px solid var(--brand-orange)',
                     borderRadius: '6px',
                     padding: '0.3rem 0.6rem',

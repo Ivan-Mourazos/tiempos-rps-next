@@ -39,7 +39,7 @@ export default function ScrollToTop() {
             height: '45px',
             borderRadius: '50%',
             background: 'var(--brand-orange)',
-            color: 'white',
+            color: 'rgba(0,0,0,0.85)',
             border: 'none',
             display: 'flex',
             alignItems: 'center',

@@ -207,6 +207,7 @@ export default function DateFilterField({
           onMouseDown={handleMouseDown}
           onFocus={() => setOpen(true)}
           placeholder={placeholder}
+          style={{ width: 'calc(10ch + 2.2rem)' }}
         />
         <div style={{ position: 'absolute', right: '0.5rem', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
           <Calendar size={14} style={{ color: 'var(--brand-orange)' }} />

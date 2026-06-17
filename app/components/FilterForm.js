@@ -13,10 +13,10 @@ function formatTecnicoName(full) {
   if (!full) return full;
   const [apellidos, nombres] = full.split(',').map(s => s.trim());
   if (!nombres) return full;
-  const primerNombre = nombres.split(' ')[0];
-  const primerApellido = apellidos.split(' ')[0];
   const toTitle = s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
-  return `${toTitle(primerNombre)} ${toTitle(primerApellido)}`;
+  const aps = apellidos.split(' ').map(toTitle).join(' ');
+  const noms = nombres.split(' ').map(toTitle).join(' ');
+  return `${aps}, ${noms}`;
 }
 
 export default function FilterForm({ filters, metadata, tipoLabels }) {
@@ -151,6 +151,31 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
           transition: 'all 0.2s',
         }}
       >
+        {/* Técnico — bloque individual á esquerda da data */}
+        <div style={{
+          display: 'flex',
+          gap: '0.3rem',
+          alignItems: 'flex-end',
+          padding: '0.3rem 0.5rem',
+          border: '1px solid var(--border-color)',
+          borderRadius: '6px',
+          background: 'transparent',
+          flexShrink: 0,
+          width: '265px', // "Rivadulla Cacharron, Jose Manuel" = 32 chars a 0.75rem
+        }}>
+          <div style={{ flex: '1 1 auto' }}>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Técnico</label>
+            <CustomSelect
+              name="tecnico"
+              value={filters.tecnico || 'TODOS'}
+              options={[
+                { value: 'TODOS', label: 'TODOS' },
+                ...metadata.tecnicos.map(t => ({ value: t.abbr, label: t.full ? formatTecnicoName(t.full) : t.abbr })),
+              ]}
+              onSelect={handleCustomSelectChange}
+            />
+          </div>
+        </div>
         {/* Grupo fechas: DENDE + ATA + HOXE agrupados visualmente */}
         <div style={{
           display: 'flex',
@@ -159,7 +184,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
           padding: '0.3rem 0.5rem',
           border: '1px solid var(--border-color)',
           borderRadius: '6px',
-          background: 'rgba(255,255,255,0.03)',
+          background: 'transparent',
           flexShrink: 0,
         }}>
           <div>
@@ -190,35 +215,13 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
           <button
             type="button"
             onClick={handleSetToday}
-            style={{
-              alignSelf: 'flex-end',
-              padding: '0.4rem 0.6rem',
-              background: 'transparent',
-              color: 'var(--text-secondary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '4px',
-              fontSize: '0.65rem',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              textTransform: 'uppercase',
-              whiteSpace: 'nowrap',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--brand-glow)';
-              e.currentTarget.style.color = 'var(--brand-orange)';
-              e.currentTarget.style.borderColor = 'var(--brand-orange)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = 'var(--text-secondary)';
-              e.currentTarget.style.borderColor = 'var(--border-color)';
-            }}
+            className="theme-toggle-btn"
+            style={{ alignSelf: 'flex-end', fontSize: '0.65rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}
           >
             HOXE
           </button>
         </div>
-        {/* Grupo selects: Técnico + Tipo + Prioridade */}
+        {/* Grupo selects: Tipo + Prioridade */}
         <div style={{
           display: 'flex',
           gap: '0.3rem',
@@ -226,23 +229,11 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
           padding: '0.3rem 0.5rem',
           border: '1px solid var(--border-color)',
           borderRadius: '6px',
-          background: 'rgba(255,255,255,0.03)',
-          flex: '3 1 300px',
+          background: 'transparent',
+          flex: '2 1 200px',
         }}>
-          <div style={{ flex: '1 1 110px' }}>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Técnico</label>
-            <CustomSelect
-              name="tecnico"
-              value={filters.tecnico || 'TODOS'}
-              options={[
-                { value: 'TODOS', label: 'TODOS' },
-                ...metadata.tecnicos.map(t => ({ value: t.abbr, label: t.full ? formatTecnicoName(t.full) : t.abbr })),
-              ]}
-              onSelect={handleCustomSelectChange}
-            />
-          </div>
-          <div style={{ flex: '1 1 110px' }}>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Tipo</label>
+          <div style={{ flex: '0 0 150px' }}>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Tipo</label>
             <CustomSelect
               name="tipo"
               value={filters.tipo || 'TODOS'}
@@ -254,7 +245,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
             />
           </div>
           <div style={{ flex: '1 1 80px' }}>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Prioridade</label>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Prioridade</label>
             <CustomSelect
               name="prioridad"
               value={filters.prioridad || 'TODAS'}
@@ -274,11 +265,11 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
           padding: '0.3rem 0.5rem',
           border: '1px solid var(--border-color)',
           borderRadius: '6px',
-          background: 'rgba(255,255,255,0.03)',
+          background: 'transparent',
           flex: '3 1 240px',
         }}>
           <div style={{ flex: '2 1 150px' }}>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Cliente / Aviso</label>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Cliente / Aviso</label>
             <input
               type="text"
               name="cliente"
@@ -286,11 +277,12 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
               placeholder="Cli..."
               onBlur={handleDeferredFilterCommit}
               onKeyDown={handleDeferredKeyDown}
-              style={{ width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.75rem' }}
+              className="date-filter-trigger-input"
+              style={{ cursor: 'text' }}
             />
           </div>
-          <div style={{ flex: '1 1 90px' }}>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Teléfono</label>
+          <div style={{ flex: '0 0 auto' }}>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Teléfono</label>
             <input
               type="text"
               name="telefono"
@@ -298,7 +290,8 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
               placeholder="Tlf..."
               onBlur={handleDeferredFilterCommit}
               onKeyDown={handleDeferredKeyDown}
-              style={{ width: '100%', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.75rem' }}
+              className="date-filter-trigger-input"
+              style={{ cursor: 'text', width: 'calc(9ch + 2.2rem)' }}
             />
           </div>
         </div>
