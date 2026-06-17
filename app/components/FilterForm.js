@@ -9,15 +9,6 @@ import { useFilterNav } from './FilterNavContext';
 import DateFilterField from './DateFilterField';
 import CustomSelect from './CustomSelect';
 
-function formatTecnicoName(full) {
-  if (!full) return full;
-  const [apellidos, nombres] = full.split(',').map(s => s.trim());
-  if (!nombres) return full;
-  const toTitle = s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
-  const aps = apellidos.split(' ').map(toTitle).join(' ');
-  const noms = nombres.split(' ').map(toTitle).join(' ');
-  return `${aps}, ${noms}`;
-}
 
 export default function FilterForm({ filters, metadata, tipoLabels }) {
   const router = useRouter();
@@ -170,7 +161,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
               value={filters.tecnico || 'TODOS'}
               options={[
                 { value: 'TODOS', label: 'TODOS' },
-                ...metadata.tecnicos.map(t => ({ value: t.abbr, label: t.full ? formatTecnicoName(t.full) : t.abbr })),
+                ...metadata.tecnicos.map(t => ({ value: t.abbr, label: t.full || t.abbr })),
               ]}
               onSelect={handleCustomSelectChange}
             />
