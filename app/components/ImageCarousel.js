@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Maximize2, X, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Maximize2, X, Download, Printer } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
 export default function ImageCarousel({ images, initialIndex = 0, isFullScreenOnly = false, onClose }) {
@@ -109,6 +109,51 @@ export default function ImageCarousel({ images, initialIndex = 0, isFullScreenOn
   const currentImage = images[currentIndex];
   const imageUrl = typeof currentImage === 'object' ? currentImage.url : currentImage;
   const imageName = typeof currentImage === 'object' ? currentImage.originalName : `imagen_${currentIndex + 1}.jpg`;
+
+  const handlePrint = (e) => {
+    if (e) e.stopPropagation();
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Por favor, permite as ventás emerxentes para poder imprimir.');
+      return;
+    }
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Imprimir - ${imageName}</title>
+          <style>
+            body {
+              margin: 0;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              height: 100vh;
+              background-color: white;
+            }
+            img {
+              max-width: 100%;
+              max-height: 100%;
+              object-fit: contain;
+            }
+            @page {
+              size: auto;
+              margin: 10mm;
+            }
+            @media print {
+              body, img {
+                max-width: 100%;
+                max-height: 100%;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <img src="${imageUrl}" onload="window.print(); window.close();" />
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   const carouselContent = (fullscreen) => (
     <div 
@@ -239,6 +284,20 @@ export default function ImageCarousel({ images, initialIndex = 0, isFullScreenOn
             >
               <Download size={18} /> Descargar
             </a>
+
+            <button 
+              onClick={handlePrint}
+              title="Imprimir imaxe"
+              style={{
+                background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', 
+                borderRadius: '8px', padding: '10px 15px', display: 'flex', alignItems: 'center', gap: '8px',
+                cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.9rem'
+              }}
+              onMouseEnter={(e) => { e.target.style.background = 'white'; e.target.style.color = 'black'; }}
+              onMouseLeave={(e) => { e.target.style.background = 'rgba(255,255,255,0.1)'; e.target.style.color = 'white'; }}
+            >
+              <Printer size={18} /> Imprimir
+            </button>
             
             <button 
               onClick={handleClose} 
