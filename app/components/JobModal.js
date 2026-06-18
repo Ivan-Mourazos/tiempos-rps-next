@@ -67,7 +67,7 @@ export default function JobModal({
       />
 
       {/* Panel centrado */}
-      <div style={{
+      <div className="job-modal-panel" style={{
         position: 'relative',
         width: 'min(88vw, 1100px)',
         height: 'min(88vh, 820px)',
@@ -141,7 +141,7 @@ export default function JobModal({
         </div>
 
         {/* CORPO: dúas columnas */}
-        <div style={{
+        <div className="job-modal-body" style={{
           display: 'grid',
           gridTemplateColumns: hasMedia ? '1fr 1fr' : '1fr',
           flex: 1,
@@ -149,7 +149,7 @@ export default function JobModal({
         }}>
 
           {/* COLUMNA ESQUERDA — info (scrollable) */}
-          <div style={{
+          <div className="job-modal-info-col" style={{
             overflowY: 'auto', padding: '1.25rem',
             display: 'flex', flexDirection: 'column', gap: '1.25rem',
             borderRight: hasMedia ? '1px solid var(--border-color)' : 'none',
@@ -200,14 +200,14 @@ export default function JobModal({
 
           {/* COLUMNA DEREITA — fotos + mapa (só se hai media) */}
           {hasMedia && (
-            <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', overflow: 'hidden' }}>
+            <div className="job-modal-media-col" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', overflow: 'hidden' }}>
               {photos.length > 0 && (
-                <div style={{ flex: 1, minHeight: 0, borderRadius: '8px', border: '1px solid var(--border-color)', overflow: 'hidden', background: 'var(--bg-color)' }}>
+                <div className="job-modal-carousel-wrapper" style={{ flex: 1, minHeight: 0, borderRadius: '8px', border: '1px solid var(--border-color)', overflow: 'hidden', background: 'var(--bg-color)' }}>
                   <ImageCarousel images={photos} />
                 </div>
               )}
               {gpsParts && (
-                <div style={{ flex: 1, minHeight: 0, borderRadius: '8px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+                <div className="job-modal-map-wrapper" style={{ flex: 1, minHeight: 0, borderRadius: '8px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
                   <iframe
                     width="100%" height="100%"
                     style={{ border: 0, display: 'block' }}

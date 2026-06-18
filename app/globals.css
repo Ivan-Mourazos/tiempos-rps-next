@@ -389,6 +389,44 @@ html.dark .job-card [data-inset-panel] {
   .header {
     padding: 1rem;
   }
+
+  /* Estilos responsivos do Modal de Detalle (JobModal) */
+  .job-modal-panel {
+    width: 95vw !important;
+    height: 92vh !important;
+    max-height: 92vh !important;
+  }
+
+  .job-modal-body {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+  }
+
+  .job-modal-info-col {
+    overflow-y: visible !important;
+    flex: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 1rem !important;
+  }
+
+  .job-modal-media-col {
+    overflow: visible !important;
+    flex: none !important;
+    padding: 1rem !important;
+    gap: 1rem !important;
+  }
+
+  .job-modal-carousel-wrapper {
+    flex: none !important;
+    height: 280px !important;
+  }
+
+  .job-modal-map-wrapper {
+    flex: none !important;
+    height: 280px !important;
+  }
 }
 
 /* ===== Loading State (spinner profesional + barra) ===== */
@@ -1110,4 +1148,376 @@ html.dark .custom-select-popover {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* ==========================================================================
+   Estilos de Maquetación Responsive e Refactorización de Header/Cards
+   ========================================================================== */
+
+/* 1. Header Layout */
+.header-container {
+  display: flex;
+  align-items: center;
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.header-title-logo {
+  flex-shrink: 0;
+  border-right: 1px solid var(--border-strong);
+  padding-right: 1rem;
+  margin-left: -14px;
+}
+
+.header-filters {
+  flex: 1 1 0%;
+  min-width: 0;
+  padding: 0 1.25rem;
+}
+
+.header-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-left: 1px solid var(--border-strong);
+  padding-left: 1rem;
+}
+
+/* 2. Filter Form & Fields (Desktop/Defaults) */
+.filter-form {
+  width: 100%;
+}
+
+.mobile-filters-toggle {
+  display: none; /* Oculto en PC */
+}
+
+.filter-form-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: flex-end;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.filter-group {
+  display: flex;
+  gap: 0.3rem;
+  align-items: flex-end;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+}
+
+.filter-group-tecnico {
+  flex-shrink: 0;
+  width: 280px;
+}
+
+.filter-group-date {
+  flex-shrink: 0;
+}
+
+.filter-group-type-priority {
+  flex: 2 1 200px;
+}
+
+.filter-type-wrapper {
+  flex: 0 0 150px;
+}
+
+.filter-priority-wrapper {
+  flex: 1 1 80px;
+}
+
+.filter-group-search {
+  flex: 3 1 240px;
+}
+
+.filter-search-cliente {
+  flex: 2 1 150px;
+}
+
+.filter-search-telefono {
+  flex: 0 0 auto;
+}
+
+.hoxe-btn {
+  align-self: flex-end;
+  font-size: 0.65rem;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+/* Alinear popover do segundo input á derecha para evitar desbordamento */
+div[data-date-field="fechaFin"] .date-filter-popover {
+  right: 0;
+  left: auto;
+}
+
+/* 3. Job Card Columns (Desktop/Defaults) */
+.job-card-col {
+  padding-right: 0.6rem;
+  border-right: 1px solid var(--border-color);
+}
+
+.job-card-col-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.job-card-col-desc {
+  /* Comportamento de bloque por defecto */
+}
+
+.job-card-col-obs {
+  /* Comportamento de bloque por defecto */
+}
+
+.job-card-col-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+
+/* 4. Regras Responsive (Móbil e Tablet) */
+@media (max-width: 1024px) {
+  /* Header relativo en móbil/tablet para permitir facer scroll cando se despregan os filtros */
+  .header,
+  html.dark .header {
+    position: relative !important;
+    top: auto !important;
+  }
+
+  /* Layout do Header en Grid */
+  .header-container {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .header-title-logo {
+    grid-column: 1;
+    grid-row: 1;
+    border-right: none;
+    padding-right: 0;
+    margin-left: 0;
+  }
+
+  .header-title-logo img {
+    height: 60px;
+    margin-block: -10px;
+  }
+
+  .header-actions {
+    grid-column: 2;
+    grid-row: 1;
+    border-left: none;
+    padding-left: 0;
+  }
+
+  .header-filters {
+    grid-column: 1 / span 2;
+    grid-row: 2;
+    padding: 0;
+    width: 100%;
+  }
+
+  /* Control de expandir/colapsar filtros en móbil */
+  .mobile-filters-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  
+  html.dark .mobile-filters-toggle {
+    background: #1a2130;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .mobile-filters-toggle:hover {
+    border-color: var(--brand-orange);
+    background: var(--brand-glow);
+  }
+
+  .active-filters-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: var(--brand-orange);
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+
+  .filter-form-fields {
+    display: none; /* Ocultos por defecto en móbil */
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: flex-end;
+    width: 100%;
+  }
+
+  .filter-form-fields.is-expanded {
+    display: flex; /* Amosados ao expandir */
+  }
+
+  .filter-group {
+    flex: 1 1 calc(50% - 0.2rem);
+    width: calc(50% - 0.2rem);
+  }
+
+  .filter-group-tecnico {
+    /* width herédase de filter-group */
+  }
+
+  .filter-group-type-priority {
+    display: flex;
+  }
+
+  .filter-type-wrapper {
+    flex: 1 1 auto;
+  }
+
+  .filter-priority-wrapper {
+    flex: 1 1 auto;
+  }
+
+  .filter-group-search {
+    display: flex;
+  }
+
+  .filter-search-cliente {
+    flex: 1 1 auto;
+  }
+
+  .filter-search-telefono {
+    flex: 0 0 auto;
+  }
+
+  .date-filter-field > div {
+    width: 100%;
+  }
+
+  .date-filter-trigger-input {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 1000px) {
+  .job-card-col-meta {
+    height: auto;
+    gap: 0.8rem;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Forzar filtros a 100% en pantallas moi pequenas */
+  .filter-group {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+  }
+
+  /* Axustar grupo de datas para que os inputs caiban un ao lado do outro */
+  .filter-group-date {
+    flex-wrap: wrap;
+  }
+  .filter-group-date > div {
+    flex: 1 1 calc(50% - 0.2rem);
+  }
+  .filter-group-date .hoxe-btn {
+    flex: 1 1 100%;
+    justify-content: center;
+    margin-top: 0.2rem;
+  }
+  
+  /* Deseño compacto de Fichas de Traballo en Móbil */
+  .job-card-main {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.6rem !important;
+  }
+  
+  .job-card-col-info {
+    grid-column: 1 / span 2;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding-bottom: 0.6rem !important;
+    padding-right: 0 !important;
+    border-right: none !important;
+  }
+  
+  .job-card-col-desc {
+    grid-column: 1;
+    border-right: 1px solid var(--border-color) !important;
+    padding-right: 0.4rem !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding-bottom: 0.6rem !important;
+  }
+  
+  .job-card-col-obs {
+    grid-column: 2;
+    border-right: none !important;
+    padding-right: 0 !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding-bottom: 0.6rem !important;
+  }
+  
+  .job-card-col-meta {
+    grid-column: 1 / span 2;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: auto !important;
+    gap: 0.5rem !important;
+    padding-top: 0.2rem !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+  }
+  
+  .job-card-col-meta > div:first-child {
+    flex: 0 0 auto !important;
+    align-items: flex-start !important;
+  }
+  
+  .job-card-col-meta > div:nth-child(2) {
+    flex: 1 1 auto !important;
+    justify-content: center !important;
+  }
+  
+  .job-card-col-meta > div:nth-child(2) span {
+    max-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+  }
+  
+  .job-card-buttons-wrapper {
+    flex: 0 0 140px !important;
+    width: 140px !important;
+  }
 }

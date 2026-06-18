@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useRef, useEffect, useState } from 'react';
-import { Calendar } from 'lucide-react';
+import { Calendar, SlidersHorizontal } from 'lucide-react';
 import { getLocalTodayISO, isDateRangeInverted } from '../lib/dateRange';
 import { formatPrioridadOption, sortPrioridadesForFilter } from '../lib/prioridad';
 import { useFilterNav } from './FilterNavContext';
@@ -15,6 +15,25 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
   const { startTransition } = useFilterNav();
   const formRef = useRef(null);
   const [rangeError, setRangeError] = useState(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (filters.tecnico && filters.tecnico !== 'TODOS') count++;
+    if (filters.tipo && filters.tipo !== 'TODOS') count++;
+    if (filters.prioridad && filters.prioridad !== 'TODAS') count++;
+    if (filters.cliente && filters.cliente.trim() !== '') count++;
+    if (filters.telefono && filters.telefono.trim() !== '') count++;
+    
+    const today = getLocalTodayISO();
+    const isDefaultDate = (filters.fechaInicio === today && !filters.fechaFin);
+    if (!isDefaultDate && (filters.fechaInicio || filters.fechaFin)) {
+      count++;
+    }
+    return count;
+  };
+
+  const activeFiltersCount = getActiveFiltersCount();
 
   // Sincroniza selects/texto coa URL (datas van por DateFilterField + hidden inputs).
   useEffect(() => {
@@ -134,156 +153,132 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
       <form
         ref={formRef}
         onSubmit={(e) => e.preventDefault()}
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '0.4rem',
-          alignItems: 'flex-end',
-          transition: 'all 0.2s',
-        }}
+        className="filter-form"
       >
-        {/* Técnico — bloque individual á esquerda da data */}
-        <div style={{
-          display: 'flex',
-          gap: '0.3rem',
-          alignItems: 'flex-end',
-          padding: '0.3rem 0.5rem',
-          border: '1px solid var(--border-color)',
-          borderRadius: '6px',
-          background: 'transparent',
-          flexShrink: 0,
-          width: '265px', // "Rivadulla Cacharron, Jose Manuel" = 32 chars a 0.75rem
-        }}>
-          <div style={{ flex: '1 1 auto' }}>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Técnico</label>
-            <CustomSelect
-              name="tecnico"
-              value={filters.tecnico || 'TODOS'}
-              options={[
-                { value: 'TODOS', label: 'TODOS' },
-                ...metadata.tecnicos.map(t => ({ value: t.abbr, label: t.full || t.abbr })),
-              ]}
-              onSelect={handleCustomSelectChange}
-            />
+        {/* Botón de control de filtros para móvil */}
+        <button
+          type="button"
+          className="mobile-filters-toggle"
+          onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
+        >
+          <SlidersHorizontal size={14} />
+          <span>{isExpanded ? 'Ocultar filtros' : 'Amosar filtros'}</span>
+          {activeFiltersCount > 0 && (
+            <span className="active-filters-badge">{activeFiltersCount}</span>
+          )}
+        </button>
+
+        {/* Contedor de campos dos filtros */}
+        <div className={`filter-form-fields ${isExpanded ? 'is-expanded' : ''}`}>
+          {/* Técnico — bloque individual á esquerda da data */}
+          <div className="filter-group filter-group-tecnico">
+            <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Técnico</label>
+              <CustomSelect
+                name="tecnico"
+                value={filters.tecnico || 'TODOS'}
+                options={[
+                  { value: 'TODOS', label: 'TODOS' },
+                  ...metadata.tecnicos.map(t => ({ value: t.abbr, label: t.full || t.abbr })),
+                ]}
+                onSelect={handleCustomSelectChange}
+              />
+            </div>
           </div>
-        </div>
-        {/* Grupo fechas: DENDE + ATA + HOXE agrupados visualmente */}
-        <div style={{
-          display: 'flex',
-          gap: '0.3rem',
-          alignItems: 'flex-end',
-          padding: '0.3rem 0.5rem',
-          border: '1px solid var(--border-color)',
-          borderRadius: '6px',
-          background: 'transparent',
-          flexShrink: 0,
-        }}>
-          <div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>
-              <Calendar size={10} /> DENDE
-            </label>
-            <DateFilterField
-              id="fechaInicio"
-              name="fechaInicio"
-              value={filters.fechaInicio || ''}
-              placeholder="Día"
-              onSelect={(iso) => handleDateSelect('fechaInicio', iso)}
-            />
+
+          {/* Grupo fechas: DENDE + ATA + HOXE agrupados visualmente */}
+          <div className="filter-group filter-group-date">
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>
+                <Calendar size={10} /> DENDE
+              </label>
+              <DateFilterField
+                id="fechaInicio"
+                name="fechaInicio"
+                value={filters.fechaInicio || ''}
+                placeholder="Día"
+                onSelect={(iso) => handleDateSelect('fechaInicio', iso)}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>
+                <Calendar size={10} /> ATA
+              </label>
+              <DateFilterField
+                id="fechaFin"
+                name="fechaFin"
+                value={filters.fechaFin || ''}
+                placeholder="Opcional"
+                allowClear
+                onSelect={(iso) => handleDateSelect('fechaFin', iso)}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleSetToday}
+              className="theme-toggle-btn hoxe-btn"
+            >
+              HOXE
+            </button>
           </div>
-          <div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>
-              <Calendar size={10} /> ATA
-            </label>
-            <DateFilterField
-              id="fechaFin"
-              name="fechaFin"
-              value={filters.fechaFin || ''}
-              placeholder="Opcional"
-              allowClear
-              onSelect={(iso) => handleDateSelect('fechaFin', iso)}
-            />
+
+          {/* Grupo selects: Tipo + Prioridade */}
+          <div className="filter-group filter-group-type-priority">
+            <div className="filter-type-wrapper">
+              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Tipo</label>
+              <CustomSelect
+                name="tipo"
+                value={filters.tipo || 'TODOS'}
+                options={[
+                  { value: 'TODOS', label: 'TODOS' },
+                  ...metadata.tipos.map(t => ({ value: t, label: tipoLabels[t] || t })),
+                ]}
+                onSelect={handleCustomSelectChange}
+              />
+            </div>
+            <div className="filter-priority-wrapper">
+              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Prioridade</label>
+              <CustomSelect
+                name="prioridad"
+                value={filters.prioridad || 'TODAS'}
+                options={[
+                  { value: 'TODAS', label: 'TODAS' },
+                  ...sortPrioridadesForFilter(metadata.prioridades).map(p => ({ value: p, label: formatPrioridadOption(p) })),
+                ]}
+                onSelect={handleCustomSelectChange}
+              />
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={handleSetToday}
-            className="theme-toggle-btn"
-            style={{ alignSelf: 'flex-end', fontSize: '0.65rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}
-          >
-            HOXE
-          </button>
-        </div>
-        {/* Grupo selects: Tipo + Prioridade */}
-        <div style={{
-          display: 'flex',
-          gap: '0.3rem',
-          alignItems: 'flex-end',
-          padding: '0.3rem 0.5rem',
-          border: '1px solid var(--border-color)',
-          borderRadius: '6px',
-          background: 'transparent',
-          flex: '2 1 200px',
-        }}>
-          <div style={{ flex: '0 0 150px' }}>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Tipo</label>
-            <CustomSelect
-              name="tipo"
-              value={filters.tipo || 'TODOS'}
-              options={[
-                { value: 'TODOS', label: 'TODOS' },
-                ...metadata.tipos.map(t => ({ value: t, label: tipoLabels[t] || t })),
-              ]}
-              onSelect={handleCustomSelectChange}
-            />
-          </div>
-          <div style={{ flex: '1 1 80px' }}>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Prioridade</label>
-            <CustomSelect
-              name="prioridad"
-              value={filters.prioridad || 'TODAS'}
-              options={[
-                { value: 'TODAS', label: 'TODAS' },
-                ...sortPrioridadesForFilter(metadata.prioridades).map(p => ({ value: p, label: formatPrioridadOption(p) })),
-              ]}
-              onSelect={handleCustomSelectChange}
-            />
-          </div>
-        </div>
-        {/* Grupo busca: Cliente + Teléfono */}
-        <div style={{
-          display: 'flex',
-          gap: '0.3rem',
-          alignItems: 'flex-end',
-          padding: '0.3rem 0.5rem',
-          border: '1px solid var(--border-color)',
-          borderRadius: '6px',
-          background: 'transparent',
-          flex: '3 1 240px',
-        }}>
-          <div style={{ flex: '2 1 150px' }}>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Cliente / Aviso</label>
-            <input
-              type="text"
-              name="cliente"
-              defaultValue={filters.cliente}
-              placeholder="Cli..."
-              onBlur={handleDeferredFilterCommit}
-              onKeyDown={handleDeferredKeyDown}
-              className="date-filter-trigger-input"
-              style={{ cursor: 'text' }}
-            />
-          </div>
-          <div style={{ flex: '0 0 auto' }}>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Teléfono</label>
-            <input
-              type="text"
-              name="telefono"
-              defaultValue={filters.telefono}
-              placeholder="Tlf..."
-              onBlur={handleDeferredFilterCommit}
-              onKeyDown={handleDeferredKeyDown}
-              className="date-filter-trigger-input"
-              style={{ cursor: 'text', width: 'calc(9ch + 2.2rem)' }}
-            />
+
+          {/* Grupo busca: Cliente + Teléfono */}
+          <div className="filter-group filter-group-search">
+            <div className="filter-search-cliente">
+              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Cliente / Aviso</label>
+              <input
+                type="text"
+                name="cliente"
+                defaultValue={filters.cliente}
+                placeholder="Cli..."
+                onBlur={handleDeferredFilterCommit}
+                onKeyDown={handleDeferredKeyDown}
+                className="date-filter-trigger-input"
+                style={{ cursor: 'text' }}
+              />
+            </div>
+            <div className="filter-search-telefono">
+              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Teléfono</label>
+              <input
+                type="text"
+                name="telefono"
+                defaultValue={filters.telefono}
+                placeholder="Tlf..."
+                onBlur={handleDeferredFilterCommit}
+                onKeyDown={handleDeferredKeyDown}
+                className="date-filter-trigger-input"
+                style={{ cursor: 'text', width: 'calc(9ch + 2.2rem)' }}
+              />
+            </div>
           </div>
         </div>
       </form>

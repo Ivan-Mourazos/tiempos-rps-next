@@ -422,27 +422,26 @@ export default async function Page({ searchParams }) {
     <div className="dashboard-container">
       <AutoRefresh interval={60000} />
       <header className="header">
-        <div style={{ display: 'flex', alignItems: 'center', maxWidth: '1600px', margin: '0 auto' }}>
+        <div className="header-container">
           {/* Logo */}
           <div
             className="header-title-logo"
             role="img"
             aria-label="Monitorización Tiempos RPS Next"
-            style={{ flexShrink: 0, borderRight: '1px solid var(--border-strong)', paddingRight: '1rem', marginLeft: '-14px' }}
           >
             <img src="/monitorizacion_claro.PNG" alt="" className="logo-light" />
             <img src="/monitorizacion_oscuro.PNG" alt="" className="logo-dark" />
           </div>
 
           {/* Filtros */}
-          <div style={{ flex: '1 1 0', minWidth: 0, padding: '0 1.25rem' }}>
+          <div className="header-filters">
             <Suspense fallback={<div className="filter-placeholder" aria-hidden="true" style={{ height: '55px' }} />}>
               <FilterWrapper filters={filters} metadataPromise={metadataPromise} />
             </Suspense>
           </div>
 
           {/* Acciones */}
-          <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '0.4rem', borderLeft: '1px solid var(--border-strong)', paddingLeft: '1rem' }}>
+          <div className="header-actions">
             <ClearFiltersButton />
             <ThemeToggle />
           </div>

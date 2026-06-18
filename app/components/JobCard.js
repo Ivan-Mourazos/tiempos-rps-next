@@ -162,7 +162,7 @@ export default function JobCard({
         <div className="job-card-main">
           
           {/* COLUMNA 1: Datos (Identificación y Cliente) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderRight: '1px solid var(--border-color)', paddingRight: '0.6rem' }}>
+          <div className="job-card-col job-card-col-info">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                 <strong style={{
@@ -216,7 +216,7 @@ export default function JobCard({
           </div>
 
           {/* COLUMNA 2: Descrición Técnica */}
-          <div style={{ borderRight: '1px solid var(--border-color)', paddingRight: '0.6rem' }}>
+          <div className="job-card-col job-card-col-desc">
             <strong style={{ display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.3rem', letterSpacing: '0.03em' }}>Descrición Técnica</strong>
             {item.texto ? (
               <div style={{ fontSize: '0.75rem', lineHeight: '1.2' }}>
@@ -230,7 +230,7 @@ export default function JobCard({
           </div>
 
           {/* COLUMNA 3: Observacións */}
-          <div style={{ borderRight: '1px solid var(--border-color)', paddingRight: '0.6rem' }}>
+          <div className="job-card-col job-card-col-obs">
             <strong style={{ display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--accent-obs)', marginBottom: '0.3rem', letterSpacing: '0.03em' }}>Observacións</strong>
             {obsVal ? (
               <div style={{ fontSize: '0.75rem', lineHeight: '1.2' }}>
@@ -244,7 +244,7 @@ export default function JobCard({
           </div>
 
           {/* COLUMNA 4: Tiempo · Ubicación · Botóns */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
+          <div className="job-card-col-meta">
             {/* Tiempo */}
             <div style={{
               fontSize: '0.85rem', fontWeight: '900', color: timeColor,
@@ -271,7 +271,7 @@ export default function JobCard({
               </div>
             ) : <div />}
 
-            <div style={{ display: 'flex', gap: '0.4rem', width: '100%' }}>
+            <div className="job-card-buttons-wrapper" style={{ display: 'flex', gap: '0.4rem', width: '100%' }}>
               {item.pedido && (
                 <button 
                   onClick={(e) => {
