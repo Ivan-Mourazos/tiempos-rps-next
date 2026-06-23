@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, ChevronDown, X } from 'lucide-react';
 
 const WEEKDAYS = ['Lu', 'Ma', 'Mi', 'Xo', 'Ve', 'Sá', 'Do'];
 
@@ -32,27 +32,18 @@ function formatToSpanishDate(isoStr) {
 
 function parseSpanishDate(str) {
   if (!str) return null;
-  // Match DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
   let match = str.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})$/);
   if (!match) {
-    // Also support typing just digits like DDMMYYYY or DDMMYY
     const matchDigits = str.match(/^(\d{2})(\d{2})(\d{2,4})$/);
-    if (matchDigits) {
-      match = matchDigits;
-    }
+    if (matchDigits) match = matchDigits;
   }
   if (!match) return null;
   const d = parseInt(match[1], 10);
   const m = parseInt(match[2], 10);
   let y = parseInt(match[3], 10);
-  if (y < 100) {
-    // assume 20xx for year < 50, 19xx for year >= 50
-    y = y < 50 ? 2000 + y : 1900 + y;
-  }
+  if (y < 100) y = y < 50 ? 2000 + y : 1900 + y;
   const date = new Date(y, m - 1, d);
-  if (date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d) {
-    return date;
-  }
+  if (date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d) return date;
   return null;
 }
 
@@ -68,9 +59,6 @@ function getMonthGrid(viewDate) {
   return cells;
 }
 
-/**
- * Calendario custom con soporte de edición manual y selección rápida de mes/año.
- */
 export default function DateFilterField({
   id,
   name,
@@ -80,11 +68,15 @@ export default function DateFilterField({
   allowClear = false,
 }) {
   const [open, setOpen] = useState(false);
+  const [monthOpen, setMonthOpen] = useState(false);
+  const [yearOpen, setYearOpen] = useState(false);
   const selected = parseISODate(value);
   const [viewMonth, setViewMonth] = useState(() => selected || new Date());
   const [inputValue, setInputValue] = useState(() => formatToSpanishDate(value));
   const rootRef = useRef(null);
   const inputRef = useRef(null);
+  const monthListRef = useRef(null);
+  const yearListRef = useRef(null);
 
   useEffect(() => {
     const parsed = parseISODate(value);
@@ -96,15 +88,10 @@ export default function DateFilterField({
     const parsed = parseSpanishDate(inputValue);
     if (parsed) {
       const iso = toISODateString(parsed);
-      if (iso !== value) {
-        onSelect(iso);
-      }
+      if (iso !== value) onSelect(iso);
     } else if (inputValue.trim() === '') {
-      if (allowClear && value) {
-        onSelect('');
-      } else {
-        setInputValue(formatToSpanishDate(value));
-      }
+      if (allowClear && value) onSelect('');
+      else setInputValue(formatToSpanishDate(value));
     } else {
       setInputValue(formatToSpanishDate(value));
     }
@@ -117,15 +104,17 @@ export default function DateFilterField({
       if (rootRef.current && !rootRef.current.contains(e.target)) {
         commitInput();
         setOpen(false);
+        setMonthOpen(false);
+        setYearOpen(false);
       }
     }
     function onEsc(e) {
       if (e.key === 'Escape') {
+        if (monthOpen) { setMonthOpen(false); return; }
+        if (yearOpen) { setYearOpen(false); return; }
         setInputValue(formatToSpanishDate(value));
         setOpen(false);
-        if (document.activeElement) {
-          document.activeElement.blur();
-        }
+        if (document.activeElement) document.activeElement.blur();
       }
     }
 
@@ -135,16 +124,29 @@ export default function DateFilterField({
       document.removeEventListener('mousedown', onDocDown);
       document.removeEventListener('keydown', onEsc);
     };
-  }, [open, inputValue, value]);
+  }, [open, monthOpen, yearOpen, inputValue, value]);
+
+  // Scroll al elemento activo cuando se abre un sub-dropdown
+  useEffect(() => {
+    if (monthOpen && monthListRef.current) {
+      const active = monthListRef.current.querySelector('.is-active');
+      if (active) active.scrollIntoView({ block: 'nearest' });
+    }
+  }, [monthOpen]);
+
+  useEffect(() => {
+    if (yearOpen && yearListRef.current) {
+      const active = yearListRef.current.querySelector('.is-active');
+      if (active) active.scrollIntoView({ block: 'nearest' });
+    }
+  }, [yearOpen]);
 
   const cells = getMonthGrid(viewMonth);
   const todayISO = toISODateString(new Date());
 
   const currentYear = new Date().getFullYear();
   const years = [];
-  for (let y = 2015; y <= currentYear + 5; y++) {
-    years.push(y);
-  }
+  for (let y = 2015; y <= currentYear + 5; y++) years.push(y);
 
   function pickDay(day) {
     onSelect(toISODateString(day));
@@ -161,9 +163,7 @@ export default function DateFilterField({
     const val = e.target.value;
     setInputValue(val);
     const parsed = parseSpanishDate(val);
-    if (parsed) {
-      setViewMonth(parsed);
-    }
+    if (parsed) setViewMonth(parsed);
   };
 
   const handleInputKeyDown = (e) => {
@@ -173,16 +173,6 @@ export default function DateFilterField({
       setOpen(false);
       e.target.blur();
     }
-  };
-
-  const handleMonthChange = (e) => {
-    const newMonth = parseInt(e.target.value, 10);
-    setViewMonth(new Date(viewMonth.getFullYear(), newMonth, 1));
-  };
-
-  const handleYearChange = (e) => {
-    const newYear = parseInt(e.target.value, 10);
-    setViewMonth(new Date(newYear, viewMonth.getMonth(), 1));
   };
 
   const handleMouseDown = (e) => {
@@ -229,46 +219,77 @@ export default function DateFilterField({
             >
               <ChevronLeft size={16} />
             </button>
-            
+
             <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-              <select
-                value={viewMonth.getMonth()}
-                onChange={handleMonthChange}
-                style={{
-                  fontSize: '0.75rem',
-                  fontWeight: '600',
-                  padding: '0.15rem 0.3rem',
-                  borderRadius: '4px',
-                  border: '1px solid var(--border-color)',
-                  background: 'var(--input-bg)',
-                  color: 'var(--text-primary)',
-                  cursor: 'pointer',
-                  outline: 'none'
-                }}
-              >
-                {MONTHS.map((m, idx) => (
-                  <option key={m} value={idx}>{m}</option>
-                ))}
-              </select>
-              <select
-                value={viewMonth.getFullYear()}
-                onChange={handleYearChange}
-                style={{
-                  fontSize: '0.75rem',
-                  fontWeight: '600',
-                  padding: '0.15rem 0.3rem',
-                  borderRadius: '4px',
-                  border: '1px solid var(--border-color)',
-                  background: 'var(--input-bg)',
-                  color: 'var(--text-primary)',
-                  cursor: 'pointer',
-                  outline: 'none'
-                }}
-              >
-                {years.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
+              {/* Selector de mes custom */}
+              <div className="dfp-picker-wrap">
+                <button
+                  type="button"
+                  className={`dfp-picker-btn${monthOpen ? ' is-open' : ''}`}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => { setMonthOpen(v => !v); setYearOpen(false); }}
+                  aria-haspopup="listbox"
+                  aria-expanded={monthOpen}
+                >
+                  {MONTHS[viewMonth.getMonth()]}
+                  <ChevronDown size={10} className="dfp-chevron" />
+                </button>
+                {monthOpen && (
+                  <div className="dfp-dropdown" role="listbox" ref={monthListRef}>
+                    {MONTHS.map((m, idx) => (
+                      <button
+                        key={m}
+                        type="button"
+                        role="option"
+                        aria-selected={idx === viewMonth.getMonth()}
+                        className={`dfp-option${idx === viewMonth.getMonth() ? ' is-active' : ''}`}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setViewMonth(new Date(viewMonth.getFullYear(), idx, 1));
+                          setMonthOpen(false);
+                        }}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Selector de año custom */}
+              <div className="dfp-picker-wrap">
+                <button
+                  type="button"
+                  className={`dfp-picker-btn${yearOpen ? ' is-open' : ''}`}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => { setYearOpen(v => !v); setMonthOpen(false); }}
+                  aria-haspopup="listbox"
+                  aria-expanded={yearOpen}
+                >
+                  {viewMonth.getFullYear()}
+                  <ChevronDown size={10} className="dfp-chevron" />
+                </button>
+                {yearOpen && (
+                  <div className="dfp-dropdown dfp-dropdown--year" role="listbox" ref={yearListRef}>
+                    {years.map((y) => (
+                      <button
+                        key={y}
+                        type="button"
+                        role="option"
+                        aria-selected={y === viewMonth.getFullYear()}
+                        className={`dfp-option${y === viewMonth.getFullYear() ? ' is-active' : ''}`}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setViewMonth(new Date(y, viewMonth.getMonth(), 1));
+                          setYearOpen(false);
+                        }}
+                      >
+                        {y}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <button
@@ -324,4 +345,3 @@ export default function DateFilterField({
     </div>
   );
 }
-
