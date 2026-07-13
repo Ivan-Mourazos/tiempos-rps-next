@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Clock, Calendar, User, MapPin, Phone, ImageOff, ExternalLink, ChevronRight, FileText } from 'lucide-react';
 import ExpandableText from './ExpandableText';
@@ -22,6 +22,7 @@ export default function JobCard({
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [showScrollArrow, setShowScrollArrow] = useState(false);
+  const scrollRef = useRef(null);
 
   // Mapeo de colores por tipo (según especificación del usuario)
   const getTypeColor = (tipo) => {
@@ -54,6 +55,14 @@ export default function JobCard({
 
   const badgeTextColor = getContrastText(typeColor);
 
+  const checkScroll = useCallback(() => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      // Mostramos la flecha si queda más de 10px por scrollar a la derecha
+      setShowScrollArrow(scrollWidth > clientWidth + scrollLeft + 10);
+    }
+  }, []);
+
   useEffect(() => {
     setMounted(true);
     checkScroll();
@@ -61,15 +70,7 @@ export default function JobCard({
     // Volver a comprobar si la ventana cambia de tamaño
     window.addEventListener('resize', checkScroll);
     return () => window.removeEventListener('resize', checkScroll);
-  }, []);
-
-  const checkScroll = () => {
-    if (scrollRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-      // Mostramos la flecha si queda más de 10px por scrollar a la derecha
-      setShowScrollArrow(scrollWidth > clientWidth + scrollLeft + 10);
-    }
-  };
+  }, [checkScroll]);
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
@@ -88,7 +89,6 @@ export default function JobCard({
   };
 
   // Ref y estados para el arrastre (drag-to-scroll)
-  const scrollRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);

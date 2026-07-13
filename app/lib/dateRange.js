@@ -15,6 +15,65 @@ export function getLocalTodayISO(timeZone = DASHBOARD_TIME_ZONE) {
   return new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date());
 }
 
+/** Busca histórica: nome/aviso ou teléfono. */
+export function hasTextSearch(filters = {}) {
+  return Boolean(
+    String(filters.cliente || '').trim() ||
+    String(filters.telefono || '').trim()
+  );
+}
+
+/** Mesma data do ano anterior, axustando 29 de febreiro a 28. */
+export function getPreviousYearISO(isoDate) {
+  const match = String(isoDate || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return '';
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const sourceDate = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    sourceDate.getUTCFullYear() !== year ||
+    sourceDate.getUTCMonth() !== month - 1 ||
+    sourceDate.getUTCDate() !== day
+  ) {
+    return '';
+  }
+
+  const targetYear = year - 1;
+  const lastDayInTargetMonth = new Date(Date.UTC(targetYear, month, 0)).getUTCDate();
+  const targetDay = Math.min(day, lastDayInTargetMonth);
+
+  return `${String(targetYear).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
+}
+
+/**
+ * Se unha busca textual conserva o rango por defecto de hoxe, amplíaa aos
+ * últimos doce meses. Calquera outro rango escollido polo usuario mantense.
+ */
+export function expandDefaultDateRangeForTextSearch(
+  filters,
+  today = getLocalTodayISO()
+) {
+  if (
+    !hasTextSearch(filters) ||
+    filters.fechaInicio !== today ||
+    filters.fechaFin
+  ) {
+    return filters;
+  }
+
+  const previousYear = getPreviousYearISO(today);
+  if (!previousYear) return filters;
+
+  return {
+    ...filters,
+    fechaInicio: previousYear,
+    fechaFin: today,
+  };
+}
+
 /**
  * Vista por defecto: sen filtros activos na URL ou só o día de hoxe en "Desde".
  * Usa searchParams crus, non o obxecto filters (xa leva defaults do servidor).

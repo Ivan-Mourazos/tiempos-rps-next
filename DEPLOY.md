@@ -6,13 +6,18 @@ Esta guía detalla los pasos para compilar, probar manualmente y dejar en ejecuc
 
 ## 1. Requisitos Previos
 
-- **Node.js**: Versión 18 o superior instalada (verificar en consola con `node -v` y `npm -v`).
+- **Node.js**: Versión 20.9 o superior instalada (verificar con `node -v`).
+- **pnpm**: Versión 11.3.0 instalada (verificar con `pnpm --version`). El proyecto fija esta versión en `package.json`.
 - **Variables de Entorno**: Asegurar que existe el archivo `.env` en la raíz con los datos reales de producción:
   ```env
   DB_SERVER=192.168.X.X (IP del SQL Server)
   DB_USER=usuario_sql
   DB_PASSWORD=contraseña_sql
   DB_NAME=nombre_bd
+  IMAGE_REMOTE_ORIGINS=http://192.168.0.128
+  IMAGE_REMOTE_PATH_PREFIXES=/SAT/
+  IMAGE_NETWORK_BASE=\\192.168.0.128\Sisgeko
+  IMAGE_MAX_BYTES=20971520
   ```
 - **Acceso a Red**: El servidor debe llegar a la base de datos SQL Server y a la ruta de red de fotos (`\\192.168.0.128\Sisgeko`).
 
@@ -24,11 +29,11 @@ Si se han descargado cambios o se reinstala desde cero, ejecutar en PowerShell/C
 
 1. **Instalar Dependencias**:
    ```powershell
-   npm install
+   pnpm install --frozen-lockfile
    ```
 2. **Compilar la Aplicación**:
    ```powershell
-   npm run build
+   pnpm build
    ```
    *Nota: Esto genera la carpeta oculta `.next`. Si falla aquí, revise que no haya errores de TypeScript/Linter en la consola.*
 
@@ -38,15 +43,14 @@ Si se han descargado cambios o se reinstala desde cero, ejecutar en PowerShell/C
 
 Antes de configurar PM2, **arranque la aplicación manualmente** para confirmar que conecta a la base de datos y no da fallos:
 
-### En Windows/Linux:
-```bash
-# Forzar el puerto 4000 directamente por consola
-npx next start -p 4000
+### En Windows:
+```powershell
+$env:PORT=4000
+pnpm start
 ```
-O bien:
+### En Linux:
 ```bash
-# Usando la variable de entorno PORT (muy recomendado en Linux)
-PORT=4000 npx next start
+PORT=4000 pnpm start
 ```
 - Abra un navegador y entre en `http://localhost:4000` (o `http://<IP_SERVIDOR>:4000`).
 - Si carga correctamente, cierre esta consola (`Ctrl + C`) para liberar el puerto antes de proceder con PM2.
@@ -55,9 +59,7 @@ PORT=4000 npx next start
 
 ## 4. Ejecución en Segundo Plano con PM2 (Windows y Linux)
 
-Si intenta ejecutar `pm2 start npm ...` pasando el puerto al final, la consola de NPM suele interpretar mal los argumentos (buscando un directorio inexistente como `/webs/tiempos-rps-next/` y **cayendo al puerto 3000 por defecto**). 
-
-Para evitar esto y asegurar el **puerto 4000**, usamos el archivo de configuración [ecosystem.config.js](file:///c:/Users/ivan.sanchez/Documents/Proyectos%20DEV/Tiempos%20RPS%20Next/ecosystem.config.js), el cual inyecta la variable `PORT: 4000` directamente y ejecuta la app con Node de manera nativa.
+Para asegurar el **puerto 4000**, usamos `ecosystem.config.js`. Este archivo inyecta `PORT: 4000` y ejecuta Next.js con Node, sin depender de comandos específicos del gestor de paquetes.
 
 1. **Eliminar cualquier proceso huérfano/antiguo**:
    ```bash
@@ -119,6 +121,5 @@ El método **100% fiable y nativo** es crear una tarea programada:
 
 - **Puerto**: La aplicación corre en el puerto **4000**. IT debe asegurarse de abrir este puerto en el Firewall del sistema (iptables/ufw en Linux, o Firewall de Windows para entrada local).
 - **Acceso**: Se accede mediante `http://<IP_DEL_SERVIDOR>:4000`.
-
-
+- **Exposición**: mantener el puerto limitado a una LAN de confianza. Si se publica fuera de ella, colocar un proxy inverso con HTTPS, autenticación y límites de petición delante de Next.js.
 

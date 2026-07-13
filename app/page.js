@@ -10,19 +10,27 @@ import LoadingState from './components/LoadingState';
 import { FilterNavProvider, FilterNavMain } from './components/FilterNavContext';
 import LoadMore from './components/LoadMore';
 import ScrollToTop from './components/ScrollToTop';
+import ViewSwitcher from './components/ViewSwitcher';
+import MonitoringMap from './components/MonitoringMap';
 import {
   DEFAULT_LIST_LIMIT,
   SEARCH_RESULT_LIMIT,
+  expandDefaultDateRangeForTextSearch,
   getLocalTodayISO,
   getSlowQueryWarningMessage,
+  hasTextSearch,
   isDateRangeInverted,
   isTodayDashboardView,
 } from './lib/dateRange';
 import {
   OUTER_APPLY_WARNING_CLIENT,
   CLIENTE_RESOLVED_COLUMN,
-  buildClienteWarningExistsClause,
 } from './lib/monitorizacionSql';
+import {
+  applyMonitorizacionFilters,
+  applyMonitorizacionOrder,
+  normalizeMonitorizacionFilters,
+} from './lib/monitorizacionFilters';
 
 // Configuración de la DB
 const dbConfig = {
@@ -47,11 +55,7 @@ function formatQueryError(error) {
   if (msg.includes('Subquery returned more than 1 value')) {
     return 'Erro interno ao resolver o nome do cliente. Proba de novo; se persiste, contacta con soporte.';
   }
-  return msg;
-}
-
-function hasTextSearch(filters) {
-  return Boolean(filters.cliente?.trim() || filters.telefono?.trim());
+  return 'Non foi posible completar a consulta. Proba de novo ou contacta con soporte.';
 }
 
 /** Límite SQL: búsqueda por texto trae todos os coincidentes (ata SEARCH_RESULT_LIMIT). */
@@ -73,6 +77,7 @@ const TIPO_LABELS = {
 };
 
 const TIPOS_ORDEN = ['PM', 'GC', 'VT', 'TP', 'AS', 'IN', 'COT'];
+const MAP_POINT_LIMIT = 50000;
 
 // Pool de conexión global
 async function getDbConnection() {
@@ -165,7 +170,7 @@ const SQL_COLUMNS = Object.values(SQL_COLUMN_GROUPS).flat().join(', ');
 
 // Componente que carga los datos de la lista (Board)
 async function JobBoard({ filters, limit, isTodayView }) {
-  const { tecnico, tipo, prioridad, cliente, telefono, fechaInicio, fechaFin } = filters;
+  const { fechaInicio, fechaFin } = filters;
 
   if (isDateRangeInverted(fechaInicio, fechaFin)) {
     return (
@@ -183,68 +188,8 @@ async function JobBoard({ filters, limit, isTodayView }) {
                  ${OUTER_APPLY_WARNING_CLIENT}
                  WHERE 1=1`;
     const request = pool.request();
-
-    if (tecnico && tecnico !== 'TODOS') {
-      query += ' AND (m.abreviatura = @tecnico OR m.comercial = @tecnico)';
-      request.input('tecnico', tecnico);
-    }
-    if (tipo && tipo !== 'TODOS') {
-      query += ' AND m.tipo = @tipo';
-      request.input('tipo', tipo);
-    }
-    if (prioridad && prioridad !== 'TODAS') {
-      query += ' AND m.prioridad = @prioridad';
-      request.input('prioridad', parseInt(prioridad));
-    }
-    if (cliente) {
-      const palabras = cliente.trim().split(/\s+/).filter(Boolean);
-      const paramNames = palabras.map((p, i) => {
-        const name = `cliente${i}`;
-        request.input(name, `%${p}%`);
-        return name;
-      });
-
-      const directMatch = palabras
-        .map((_, i) => `m.cliente LIKE @cliente${i}`)
-        .join(' AND ');
-      const warningExists = buildClienteWarningExistsClause(paramNames);
-
-      query += ` AND ((${directMatch}) OR ${warningExists} OR m.aviso LIKE @clienteFull OR m.comercial LIKE @clienteFull)`;
-      request.input('clienteFull', `%${cliente}%`);
-    }
-    if (telefono) {
-      query += ' AND (m.Telefono1 LIKE @telefono OR m.Telefono2 LIKE @telefono)';
-      request.input('telefono', `%${telefono}%`);
-    }
-    if (fechaInicio) {
-      query += ' AND m.fecha >= @fechaInicio';
-      request.input('fechaInicio', fechaInicio);
-    }
-    
-    // Determine the end date for SQL and Order logic
-    // If no end date was chosen in the params but we have a start date, 
-    // it functions as a single day filter (for the start date) per user request.
-    const effectiveFechaFin = filters.fechaFin || filters.fechaInicio;
-    
-    if (effectiveFechaFin) {
-      query += ' AND m.fecha < DATEADD(day, 1, @fechaFinSql)';
-      request.input('fechaFinSql', effectiveFechaFin);
-    }
-
-    // Lógica orden web vieja revisada
-    if (!filters.fechaInicio && !filters.fechaFin) {
-      // Default: últimos registros primero
-      query += ' ORDER BY m.fecha DESC, m.hora DESC';
-    } else if (filters.fechaInicio && !filters.fechaFin) {
-      // Día específico suelto: orden hora descendente (nuevos primero)
-      query += ' ORDER BY m.fecha DESC, m.hora DESC';
-    } else if (filters.fechaInicio === effectiveFechaFin) {
-      // Mismo día explícito
-      query += ' ORDER BY m.fecha DESC, m.hora DESC';
-    } else {
-      // Intervalo de varios días
-      query += ' ORDER BY m.fecha ASC, m.hora DESC';
-    }
+    query = applyMonitorizacionFilters(query, request, filters);
+    query = applyMonitorizacionOrder(query, filters);
 
     const result = await request.query(query);
     const dbData = result.recordset || [];
@@ -342,6 +287,133 @@ async function JobBoard({ filters, limit, isTodayView }) {
   }
 }
 
+function parseGps(rawGps) {
+  const normalized = String(rawGps || '').trim();
+  if (!normalized || normalized === '0.0,0.0' || normalized === '0,0') return null;
+
+  const [latRaw, lonRaw] = normalized.split(',');
+  const lat = Number(String(latRaw || '').trim());
+  const lon = Number(String(lonRaw || '').trim());
+
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lon) ||
+    lat < -90 ||
+    lat > 90 ||
+    lon < -180 ||
+    lon > 180 ||
+    (lat === 0 && lon === 0)
+  ) {
+    return null;
+  }
+
+  return {
+    lat: Math.round(lat * 1e6) / 1e6,
+    lon: Math.round(lon * 1e6) / 1e6,
+  };
+}
+
+function hasDeclaredGps(rawGps) {
+  const normalized = String(rawGps || '').trim();
+  return Boolean(normalized && normalized !== '0.0,0.0' && normalized !== '0,0');
+}
+
+function serializeMapPoint(row, coordinates) {
+  const fecha = row.fecha instanceof Date
+    ? row.fecha.toISOString()
+    : row.fecha
+      ? new Date(row.fecha).toISOString()
+      : null;
+
+  return {
+    id: String(row.asistencia || '').trim(),
+    aviso: String(row.aviso || '').trim(),
+    tipo: String(row.tipo || '').trim().toUpperCase(),
+    cliente: String(row.cliente || '').replace(/['"]+/g, '').trim(),
+    local: String(row.local || '').replace(/['"]+/g, '').trim(),
+    localidad: String(row.localidad || '').trim(),
+    tecnico: String(row.comercial || row.abreviatura || '').trim(),
+    fecha,
+    hora: Number(row.hora) || null,
+    lat: coordinates.lat,
+    lon: coordinates.lon,
+  };
+}
+
+async function MapBoard({ filters }) {
+  if (isDateRangeInverted(filters.fechaInicio, filters.fechaFin)) {
+    return (
+      <div className="error-banner" role="alert">
+        <strong>⚠️ Intervalo de datas non válido:</strong> a data &quot;Ata&quot; debe ser posterior ou igual á data &quot;Desde&quot;.
+      </div>
+    );
+  }
+
+  try {
+    const pool = await getDbConnection();
+    const request = pool.request();
+    let query = `SELECT TOP ${MAP_POINT_LIMIT + 1}
+                   m.asistencia, m.aviso, m.tipo, m.fecha, m.hora,
+                   m.comercial, m.abreviatura, m.local, m.localidad, m.gps,
+                   ${CLIENTE_RESOLVED_COLUMN}
+                 FROM tgm_monitorizacion m WITH (NOLOCK)
+                 ${OUTER_APPLY_WARNING_CLIENT}
+                 WHERE 1=1`;
+
+    query = applyMonitorizacionFilters(query, request, filters);
+    query += ' ORDER BY m.fecha DESC, m.hora DESC';
+
+    const result = await request.query(query);
+    const rows = result.recordset || [];
+    const truncated = rows.length > MAP_POINT_LIMIT;
+    if (truncated) rows.length = MAP_POINT_LIMIT;
+
+    const points = [];
+    const unmappedByLocation = new Map();
+    let withoutGps = 0;
+    let invalidGps = 0;
+
+    for (const row of rows) {
+      const coordinates = parseGps(row.gps);
+      if (coordinates) {
+        points.push(serializeMapPoint(row, coordinates));
+        continue;
+      }
+
+      if (hasDeclaredGps(row.gps)) invalidGps += 1;
+      else withoutGps += 1;
+
+      const location = String(row.localidad || 'Sen concello').trim() || 'Sen concello';
+      unmappedByLocation.set(location, (unmappedByLocation.get(location) || 0) + 1);
+    }
+
+    const unmappedLocations = Array.from(unmappedByLocation, ([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'gl'))
+      .slice(0, 12);
+
+    return (
+      <MonitoringMap
+        points={points}
+        coverage={{
+          total: rows.length,
+          mapped: points.length,
+          withoutGps,
+          invalidGps,
+          truncated,
+          limit: MAP_POINT_LIMIT,
+        }}
+        unmappedLocations={unmappedLocations}
+      />
+    );
+  } catch (error) {
+    return (
+      <div className="error-banner" role="alert">
+        <strong>⚠️ Erro ao cargar o mapa:</strong> {formatQueryError(error)}
+      </div>
+    );
+  }
+}
+
 // Wrapper para formatear los datos de cada tarjeta
 function JobCardWrapper({ item, index, extraPhotos }) {
   const formatTime = (minutes) => {
@@ -398,11 +470,13 @@ function JobCardWrapper({ item, index, extraPhotos }) {
 export default async function Page({ searchParams }) {
   const params = await searchParams;
   const today = getLocalTodayISO();
+  const view = params.vista === 'mapa' ? 'mapa' : 'listado';
   const isTodayView = isTodayDashboardView(params, today);
   const hasDateParams = params.fechaInicio || params.fechaFin;
-  const limit = parseInt(params.limit) || DEFAULT_LIST_LIMIT;
+  const parsedLimit = Number.parseInt(String(params.limit || ''), 10);
+  const limit = Number.isFinite(parsedLimit) ? parsedLimit : DEFAULT_LIST_LIMIT;
 
-  const filters = {
+  let filters = normalizeMonitorizacionFilters({
     tecnico: params.tecnico || 'TODOS',
     tipo: params.tipo || 'TODOS',
     prioridad: params.prioridad || 'TODAS',
@@ -410,7 +484,13 @@ export default async function Page({ searchParams }) {
     telefono: params.telefono || '',
     fechaInicio: params.fechaInicio || (hasDateParams ? '' : today),
     fechaFin: params.fechaFin || ''
-  };
+  });
+
+  if (!filters.fechaInicio && !filters.fechaFin) {
+    filters = { ...filters, fechaInicio: today };
+  }
+
+  filters = expandDefaultDateRangeForTextSearch(filters, today);
 
   const loadingSubmessage = getSlowQueryWarningMessage(filters.fechaInicio, filters.fechaFin);
 
@@ -442,6 +522,7 @@ export default async function Page({ searchParams }) {
 
           {/* Acciones */}
           <div className="header-actions">
+            <ViewSwitcher currentView={view} />
             <ClearFiltersButton />
             <ThemeToggle />
           </div>
@@ -460,16 +541,20 @@ export default async function Page({ searchParams }) {
         >
           <FilterNavMain>
             <Suspense
-              key={JSON.stringify({ ...filters, limit })}
+              key={JSON.stringify({ ...filters, limit, view })}
               fallback={
                 <LoadingState
-                  message="Cargando datos"
+                  message={view === 'mapa' ? 'Cargando mapa' : 'Cargando datos'}
                   submessage={loadingSubmessage}
                   submessageVariant={loadingSubmessage ? 'warning' : 'default'}
                 />
               }
             >
-              <JobBoard filters={filters} limit={limit} isTodayView={isTodayView} />
+              {view === 'mapa' ? (
+                <MapBoard filters={filters} />
+              ) : (
+                <JobBoard filters={filters} limit={limit} isTodayView={isTodayView} />
+              )}
             </Suspense>
           </FilterNavMain>
         </Suspense>

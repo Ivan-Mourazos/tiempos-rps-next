@@ -1,15 +1,17 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Trash2 } from 'lucide-react';
 import { useFilterNav } from './FilterNavContext';
 
 export default function ClearFiltersButton() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { startTransition } = useFilterNav();
 
   function handleClear() {
-    startTransition(() => router.push('/'));
+    const href = searchParams.get('vista') === 'mapa' ? '/?vista=mapa' : '/';
+    startTransition(() => router.push(href));
   }
 
   return (

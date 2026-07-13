@@ -1,9 +1,13 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useRef, useEffect, useState } from 'react';
 import { Calendar, SlidersHorizontal } from 'lucide-react';
-import { getLocalTodayISO, isDateRangeInverted } from '../lib/dateRange';
+import {
+  expandDefaultDateRangeForTextSearch,
+  getLocalTodayISO,
+  isDateRangeInverted,
+} from '../lib/dateRange';
 import { formatPrioridadOption, sortPrioridadesForFilter } from '../lib/prioridad';
 import { useFilterNav } from './FilterNavContext';
 import DateFilterField from './DateFilterField';
@@ -12,6 +16,7 @@ import CustomSelect from './CustomSelect';
 
 export default function FilterForm({ filters, metadata, tipoLabels }) {
   const router = useRouter();
+  const currentSearchParams = useSearchParams();
   const { startTransition } = useFilterNav();
   const formRef = useRef(null);
   const [rangeError, setRangeError] = useState(null);
@@ -67,14 +72,23 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
   function applyFiltersFromForm(form, dateOverrides = {}) {
     const formData = new FormData(form);
 
-    const fechaInicio =
+    let fechaInicio =
       dateOverrides.fechaInicio !== undefined
         ? dateOverrides.fechaInicio
         : filters.fechaInicio || '';
-    const fechaFin =
+    let fechaFin =
       dateOverrides.fechaFin !== undefined
         ? dateOverrides.fechaFin
         : filters.fechaFin || '';
+
+    const effectiveRange = expandDefaultDateRangeForTextSearch({
+      cliente: formData.get('cliente'),
+      telefono: formData.get('telefono'),
+      fechaInicio,
+      fechaFin,
+    });
+    fechaInicio = effectiveRange.fechaInicio;
+    fechaFin = effectiveRange.fechaFin;
 
     if (isDateRangeInverted(fechaInicio, fechaFin)) {
       setRangeError('A data "Ata" debe ser posterior ou igual á data "Desde".');
@@ -92,6 +106,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
 
     if (fechaInicio) searchParams.set('fechaInicio', fechaInicio);
     if (fechaFin) searchParams.set('fechaFin', fechaFin);
+    if (currentSearchParams.get('vista') === 'mapa') searchParams.set('vista', 'mapa');
 
     startTransition(() => {
       router.push(`/?${searchParams.toString()}`);

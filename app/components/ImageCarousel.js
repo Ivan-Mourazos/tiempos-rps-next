@@ -117,42 +117,31 @@ export default function ImageCarousel({ images, initialIndex = 0, isFullScreenOn
       alert('Por favor, permite as ventás emerxentes para poder imprimir.');
       return;
     }
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Imprimir - ${imageName}</title>
-          <style>
-            body {
-              margin: 0;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              height: 100vh;
-              background-color: white;
-            }
-            img {
-              max-width: 100%;
-              max-height: 100%;
-              object-fit: contain;
-            }
-            @page {
-              size: auto;
-              margin: 10mm;
-            }
-            @media print {
-              body, img {
-                max-width: 100%;
-                max-height: 100%;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <img src="${imageUrl}" onload="window.print(); window.close();" />
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    printWindow.opener = null;
+
+    const printDocument = printWindow.document;
+    const title = printDocument.createElement('title');
+    title.textContent = `Imprimir - ${String(imageName).slice(0, 200)}`;
+
+    const style = printDocument.createElement('style');
+    style.textContent = `
+      body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: white; }
+      img { max-width: 100%; max-height: 100%; object-fit: contain; }
+      @page { size: auto; margin: 10mm; }
+      @media print { body, img { max-width: 100%; max-height: 100%; } }
+    `;
+
+    const image = printDocument.createElement('img');
+    image.src = imageUrl;
+    image.alt = String(imageName).slice(0, 200);
+    image.addEventListener('load', () => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    }, { once: true });
+
+    printDocument.head.replaceChildren(title, style);
+    printDocument.body.replaceChildren(image);
   };
 
   const carouselContent = (fullscreen) => (
@@ -363,12 +352,12 @@ export default function ImageCarousel({ images, initialIndex = 0, isFullScreenOn
           position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
           zIndex: 99999, animation: 'fadeIn 0.2s ease-out' 
         }}>
-          <style dangerouslySetInnerHTML={{ __html: `
+          <style>{`
             @keyframes fadeIn {
               from { opacity: 0; }
               to { opacity: 1; }
             }
-          `}} />
+          `}</style>
           {carouselContent(true)}
         </div>,
         document.body
