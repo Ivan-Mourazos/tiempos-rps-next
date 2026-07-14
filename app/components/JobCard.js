@@ -7,6 +7,7 @@ import ExpandableText from './ExpandableText';
 import JobModal from './JobModal';
 import ImageCarousel from './ImageCarousel';
 import PdfModal from './PdfModal';
+import { formatSecondsAsClock } from '../lib/timeFormat';
 
 export default function JobCard({
   item, index, timeVal, estTimeVal, solutionVal,
@@ -14,6 +15,7 @@ export default function JobCard({
   timeColor, gpsParts, photos, isRealClientDifferent, formattedDate,
   asistencia
 }) {
+  const formattedCloseTime = formatSecondsAsClock(item.hora);
   const [isModalOpen, setIsModalOpen] = useState(false);
   // Dirección/preaviso/CP/provincia: baixo demanda ao abrir Ficha (/api/ficha)
   const [fichaExtra, setFichaExtra] = useState(null);
@@ -192,6 +194,7 @@ export default function JobCard({
                 <span>|</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
                   <Calendar size={10} /> {formattedDate}
+                  {formattedCloseTime ? ` · ${formattedCloseTime}` : null}
                 </span>
               </div>
             </div>

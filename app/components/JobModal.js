@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { X, Clock, MapPin, Phone, Calendar, User, FileText } from 'lucide-react';
 import ImageCarousel from './ImageCarousel';
 import PdfModal from './PdfModal';
+import { formatSecondsAsClock } from '../lib/timeFormat';
 
 export default function JobModal({ 
   isOpen, onClose, item, photos, gpsParts, avisoCompleto, tecnicoVal, 
@@ -25,6 +26,7 @@ export default function JobModal({
     return (L + 0.05) / 0.05 >= 1.05 / (L + 0.05) ? '#1a1a1a' : '#ffffff';
   };
   const badgeTextColor = getContrastText(typeColor);
+  const formattedCloseTime = formatSecondsAsClock(item.hora);
 
   useEffect(() => {
     setMounted(true);
@@ -99,6 +101,7 @@ export default function JobModal({
             <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>·</span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
               <Calendar size={13} /> {formattedDate}
+              {formattedCloseTime ? ` · ${formattedCloseTime}` : null}
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '1rem', fontWeight: '900', color: timeColor }}>
               <Clock size={14} /> {timeVal}

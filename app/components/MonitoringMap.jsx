@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import JobModal from './JobModal';
 import { MiniSpinner } from './LoadingState';
+import { formatSecondsAsClock } from '../lib/timeFormat';
 
 const MAP_STYLE_URL =
   process.env.NEXT_PUBLIC_MAP_STYLE_URL || 'https://tiles.openfreemap.org/styles/liberty';
@@ -47,14 +48,6 @@ function formatDate(isoDate) {
     month: 'short',
     year: 'numeric',
   });
-}
-
-function formatSeconds(seconds) {
-  const value = Number(seconds);
-  if (!Number.isFinite(value) || value < 0) return '';
-  const hours = Math.floor(value / 3600);
-  const minutes = Math.floor((value % 3600) / 60);
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
 function getGpsParts(item, selectedPoint) {
@@ -326,6 +319,7 @@ export default function MonitoringMap({ points, coverage, unmappedLocations }) {
 
   const unlocatedCount = coverage.withoutGps + coverage.invalidGps;
   const selectedTypeColor = getTypeColor(selectedPoint?.tipo);
+  const selectedCloseTime = formatSecondsAsClock(selectedPoint?.hora);
   const detailItem = detail?.item;
   const detailGpsParts = detailItem ? getGpsParts(detailItem, selectedPoint) : null;
   const detailTimeColor = detailItem?.tiempo_previsto && detailItem?.tiempo_total
@@ -433,7 +427,7 @@ export default function MonitoringMap({ points, coverage, unmappedLocations }) {
               <span><User size={13} /> {selectedPoint.tecnico || 'Sen técnico'}</span>
               <span>
                 <Calendar size={13} /> {formatDate(selectedPoint.fecha)}
-                {formatSeconds(selectedPoint.hora) ? ` · ${formatSeconds(selectedPoint.hora)}` : ''}
+                {selectedCloseTime ? ` · ${selectedCloseTime}` : ''}
               </span>
               {selectedPoint.localidad && <span><MapPin size={13} /> {selectedPoint.localidad}</span>}
             </div>
