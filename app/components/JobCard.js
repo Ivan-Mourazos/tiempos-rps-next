@@ -218,16 +218,16 @@ export default function JobCard({
             </div>
           </div>
 
-          {/* COLUMNA 2: Descrición Técnica */}
+          {/* COLUMNA 2: Descripción Técnica */}
           <div className="job-card-col job-card-col-desc">
-            <strong style={{ display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.3rem', letterSpacing: '0.03em' }}>Descrición Técnica</strong>
+            <strong style={{ display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.3rem', letterSpacing: '0.03em' }}>Descripción Técnica</strong>
             {item.texto ? (
               <div style={{ fontSize: '0.75rem', lineHeight: '1.2' }}>
                 <ExpandableText text={item.texto} maxLines={6} onExpand={handleOpenModal} />
               </div>
             ) : (
               <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.7, fontStyle: 'italic', height: '100%', display: 'flex', alignItems: 'center' }}>
-                Sen descrición técnica
+                Sin descripción técnica
               </div>
             )}
           </div>
