@@ -67,12 +67,19 @@ export default function JobCard({
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Frecha de "máis fotos": só nas tarxetas con fotos, e observando o propio
+  // carril (antes: un listener de resize en window por cada tarxeta).
+  const hasPhotos = photos.length > 0;
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!hasPhotos || !el) return;
     checkScroll();
-    
-    // Volver a comprobar si la ventana cambia de tamaño
-    window.addEventListener('resize', checkScroll);
-    return () => window.removeEventListener('resize', checkScroll);
-  }, [checkScroll]);
+    const observer = new ResizeObserver(checkScroll);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasPhotos, checkScroll]);
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
@@ -83,7 +90,7 @@ export default function JobCard({
         .catch(() => setFichaExtra({}));
     }
   };
-  
+
   const handleOpenLightbox = (e, index) => {
     e.stopPropagation();
     setSelectedImageIndex(index);
@@ -149,43 +156,21 @@ export default function JobCard({
 
   return (
     <>
-      <li className="job-card" style={{ 
-        display: 'flex', 
-        flexDirection: 'column',
-        gap: '0.6rem', 
-        padding: '0.6rem', 
-        paddingLeft: '1rem', // Aumentado para dar espacio al borde de color
-        border: '1px solid var(--border-color)',
-        borderLeft: `6px solid ${typeColor}`, // Borde grueso lateral según el tipo
-        position: 'relative', 
-        overflow: 'hidden',
-      }}>
+      {/* --tipo: cor do tipo de aviso (franxa lateral). */}
+      <li className="job-card" style={{ '--tipo': typeColor }}>
         {/* --- FILA 1: 4 COLUMNAS (GRID) --- */}
         <div className="job-card-main">
-          
+
           {/* COLUMNA 1: Datos (Identificación y Cliente) */}
           <div className="job-card-col job-card-col-info">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                <strong style={{
-                   fontSize: '0.9rem',
+                <strong className="job-card-aviso" style={{
                    color: badgeTextColor,
                    background: typeColor,
-                   padding: '2px 8px',
-                   borderRadius: '4px',
                    textShadow: badgeTextColor === '#ffffff' ? '0 1px 2px rgba(0,0,0,0.2)' : 'none'
                 }}>{avisoCompleto}</strong>
-                <span style={{
-                   fontSize: '0.65rem',
-                   color: 'var(--solution-fg)',
-                   fontWeight: '800',
-                   background: 'var(--solution-bg)',
-                   border: '1px solid var(--solution-border)',
-                   padding: '2px 7px',
-                   borderRadius: '4px',
-                   textTransform: 'uppercase',
-                   letterSpacing: '0.03em'
-                }}>{solutionVal}</span>
+                <span className="job-card-solution">{solutionVal}</span>
               </div>
               <div style={{ fontSize: '0.7rem', display: 'flex', gap: '0.4rem', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', color: 'var(--text-primary)', fontWeight: '500' }}>
@@ -276,67 +261,21 @@ export default function JobCard({
 
             <div className="job-card-buttons-wrapper" style={{ display: 'flex', gap: '0.4rem', width: '100%' }}>
               {item.pedido && (
-                <button 
+                <button
+                  type="button"
+                  className="job-card-btn job-card-btn--pedido"
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsPdfModalOpen(true);
-                  }}
-                  style={{
-                    flex: 1,
-                    background: 'var(--brand-orange)',
-                    color: 'rgba(0,0,0,0.85)',
-                    border: '1px solid var(--brand-orange)',
-                    borderRadius: '6px',
-                    padding: '0.3rem 0.6rem',
-                    fontSize: '0.65rem',
-                    fontWeight: '600',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.3rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    justifyContent: 'center'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.opacity = '0.9';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.opacity = '1';
                   }}
                 >
                   <FileText size={12} /> Pedido
                 </button>
               )}
-              <button 
+              <button
+                type="button"
+                className="job-card-btn job-card-btn--ficha"
                 onClick={handleOpenModal}
-                style={{
-                  flex: 1,
-                  background: 'var(--surface-color)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '6px',
-                  padding: '0.3rem 0.6rem',
-                  fontSize: '0.65rem',
-                  fontWeight: '600',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.2rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                  pointerEvents: 'auto',
-                  justifyContent: 'center'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--brand-orange)';
-                  e.currentTarget.style.color = 'white';
-                  e.currentTarget.style.borderColor = 'var(--brand-orange)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'var(--surface-color)';
-                  e.currentTarget.style.color = 'var(--text-primary)';
-                  e.currentTarget.style.borderColor = 'var(--border-color)';
-                }}
               >
                 Ficha <ChevronRight size={12} />
               </button>
@@ -347,65 +286,38 @@ export default function JobCard({
         {/* --- FILA 2: Imágenes (Horizontal scroll) --- */}
         {photos.length > 0 && (
           <div style={{ position: 'relative', marginTop: '0.4rem' }}>
-            <div 
+            <div
               ref={scrollRef}
               onMouseDown={handleMouseDown}
               onMouseLeave={handleMouseLeave}
               onMouseUp={handleMouseUp}
               onMouseMove={handleMouseMove}
               onScroll={checkScroll}
-              style={{ 
-                display: 'flex', 
-                gap: '0.6rem', 
-                overflowX: 'auto', 
-                paddingBottom: '0.6rem',
-                paddingTop: '0.4rem',
-                borderTop: '1px dashed var(--border-color)',
-                scrollbarWidth: 'thin',
-                scrollbarColor: 'var(--brand-orange) transparent',
-                msOverflowStyle: 'none',
-                WebkitOverflowScrolling: 'touch',
+              style={{
                 scrollSnapType: isDragging ? 'none' : 'x proximity',
                 cursor: isDragging ? 'grabbing' : 'grab',
-                userSelect: 'none'
               }}
-              className="custom-scrollbar"
+              className="custom-scrollbar job-card-photos"
             >
               {photos.map((photo, i) => (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   onClick={(e) => handlePhotoClick(e, i)}
                   onDragStart={(e) => e.preventDefault()} // Evita el arrastre nativo de imágenes
-                  style={{ 
-                    flex: '0 0 160px',
-                    height: '110px', 
-                    borderRadius: '6px', 
-                    overflow: 'hidden', 
-                    border: '1px solid var(--border-color)',
-                    cursor: 'pointer',
-                    background: '#1a1a1a', 
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.2s',
-                    position: 'relative',
-                    pointerEvents: 'auto',
-                    scrollSnapAlign: 'start'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  className="job-card-thumb"
                 >
-                  <img 
-                    src={photo.url} 
-                    alt={`Traballo ${i + 1}`} 
+                  <img
+                    src={photo.url}
+                    alt={`Traballo ${i + 1}`}
                     loading="lazy"
+                    decoding="async"
                     style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                   />
                   {photos.length > 1 && (
-                    <span style={{ 
-                      position: 'absolute', bottom: '4px', right: '4px', 
-                      background: 'rgba(0,0,0,0.6)', color: 'white', 
-                      fontSize: '0.55rem', padding: '2px 5px', borderRadius: '3px' 
+                    <span style={{
+                      position: 'absolute', bottom: '4px', right: '4px',
+                      background: 'rgba(0,0,0,0.6)', color: 'white',
+                      fontSize: '0.55rem', padding: '2px 5px', borderRadius: '3px'
                     }}>
                       {i + 1} / {photos.length}
                     </span>
@@ -441,7 +353,7 @@ export default function JobCard({
         {mounted && createPortal(
           <>
             {isModalOpen && (
-              <JobModal 
+              <JobModal
                 isOpen={true}
                 onClose={() => setIsModalOpen(false)}
                 item={item}
@@ -464,17 +376,17 @@ export default function JobCard({
               />
             )}
             {isLightboxOpen && (
-              <ImageCarousel 
-                images={photos} 
-                initialIndex={selectedImageIndex} 
-                isFullScreenOnly={true} 
-                onClose={() => setIsLightboxOpen(false)} 
+              <ImageCarousel
+                images={photos}
+                initialIndex={selectedImageIndex}
+                isFullScreenOnly={true}
+                onClose={() => setIsLightboxOpen(false)}
               />
             )}
             {isPdfModalOpen && (
-              <PdfModal 
-                isOpen={true} 
-                onClose={() => setIsPdfModalOpen(false)} 
+              <PdfModal
+                isOpen={true}
+                onClose={() => setIsPdfModalOpen(false)}
                 pdfUrl={item.pedido}
                 title={item.aviso}
               />

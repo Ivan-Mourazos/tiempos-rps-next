@@ -39,6 +39,10 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
   };
 
   const activeFiltersCount = getActiveFiltersCount();
+  // Marca (punto) nos campos con filtro aplicado.
+  const activo = (on) => (on ? 'true' : undefined);
+  const todayISO = getLocalTodayISO();
+  const fechasActivas = !(filters.fechaInicio === todayISO && !filters.fechaFin) && Boolean(filters.fechaInicio || filters.fechaFin);
 
   // Sincroniza selects/texto coa URL (datas van por DateFilterField + hidden inputs).
   useEffect(() => {
@@ -188,7 +192,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
         <div className={`filter-form-fields ${isExpanded ? 'is-expanded' : ''}`}>
           {/* Técnico — bloque individual á esquerda da data */}
           <div className="filter-group filter-group-tecnico">
-            <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+            <div className="filter-field" data-activo={activo(filters.tecnico && filters.tecnico !== 'TODOS')} style={{ flex: '1 1 auto', minWidth: 0 }}>
               <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Técnico</label>
               <CustomSelect
                 name="tecnico"
@@ -204,7 +208,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
 
           {/* Grupo fechas: DENDE + ATA + HOXE agrupados visualmente */}
           <div className="filter-group filter-group-date">
-            <div>
+            <div className="filter-field" data-activo={activo(fechasActivas)}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>
                 <Calendar size={10} /> DENDE
               </label>
@@ -216,7 +220,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
                 onSelect={(iso) => handleDateSelect('fechaInicio', iso)}
               />
             </div>
-            <div>
+            <div className="filter-field" data-activo={activo(fechasActivas)}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>
                 <Calendar size={10} /> ATA
               </label>
@@ -240,7 +244,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
 
           {/* Grupo selects: Tipo + Prioridade */}
           <div className="filter-group filter-group-type-priority">
-            <div className="filter-type-wrapper">
+            <div className="filter-field filter-type-wrapper" data-activo={activo(filters.tipo && filters.tipo !== 'TODOS')}>
               <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Tipo</label>
               <CustomSelect
                 name="tipo"
@@ -252,7 +256,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
                 onSelect={handleCustomSelectChange}
               />
             </div>
-            <div className="filter-priority-wrapper">
+            <div className="filter-field filter-priority-wrapper" data-activo={activo(filters.prioridad && filters.prioridad !== 'TODAS')}>
               <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Prioridade</label>
               <CustomSelect
                 name="prioridad"
@@ -268,7 +272,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
 
           {/* Grupo busca: Cliente + Teléfono */}
           <div className="filter-group filter-group-search">
-            <div className="filter-search-cliente">
+            <div className="filter-field filter-search-cliente" data-activo={activo(filters.cliente?.trim())}>
               <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Cliente / Aviso</label>
               <input
                 type="text"
@@ -281,7 +285,7 @@ export default function FilterForm({ filters, metadata, tipoLabels }) {
                 style={{ cursor: 'text' }}
               />
             </div>
-            <div className="filter-search-telefono">
+            <div className="filter-field filter-search-telefono" data-activo={activo(filters.telefono?.trim())}>
               <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>Teléfono</label>
               <input
                 type="text"

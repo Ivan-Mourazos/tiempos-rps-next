@@ -1,4 +1,5 @@
 import sql from 'mssql';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import ThemeToggle from './components/ThemeToggle';
@@ -264,13 +265,20 @@ async function JobBoard({ filters, limit, isTodayView }) {
       }
     }
 
+    const usedKeys = new Map();
     return (
       <>
-        <ul className="job-list" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', listStyle: 'none', padding: 0 }}>
+        <ul className="job-list job-list--stack">
           {dbData.map((item, index) => {
             const asistKey = item.asistencia ? String(item.asistencia).trim() : null;
             const extraPhotos = asistKey ? photosMap[asistKey] : null;
-            return <JobCardWrapper key={index} item={item} index={index} extraPhotos={extraPhotos} />;
+            // Clave estable: co refresco automático entran rexistros novos arriba e,
+            // con key={index}, o modal aberto saltaba a outra tarxeta.
+            const baseKey = asistKey || `${String(item.aviso || '').trim()}-${String(item.tipo || '').trim()}`;
+            const repeat = usedKeys.get(baseKey) || 0;
+            usedKeys.set(baseKey, repeat + 1);
+            const key = repeat ? `${baseKey}#${repeat}` : baseKey;
+            return <JobCardWrapper key={key} item={item} index={index} extraPhotos={extraPhotos} />;
           })}
         </ul>
         {dbData.length >= queryLimit && queryLimit < SEARCH_RESULT_LIMIT && (
@@ -509,8 +517,9 @@ export default async function Page({ searchParams }) {
             role="img"
             aria-label="Monitorización Tiempos RPS Next"
           >
-            <img src="/monitorizacion_claro.PNG" alt="" className="logo-light" />
-            <img src="/monitorizacion_oscuro.PNG" alt="" className="logo-dark" />
+            {/* Orixinais 2172×724 (~480 KB cada un); next/image serve WebP ao tamaño mostrado. */}
+            <Image src="/monitorizacion_claro.PNG" width={2172} height={724} alt="" className="logo-light" sizes="240px" loading="eager" />
+            <Image src="/monitorizacion_oscuro.PNG" width={2172} height={724} alt="" className="logo-dark" sizes="240px" loading="eager" />
           </div>
 
           {/* Filtros */}
@@ -541,7 +550,8 @@ export default async function Page({ searchParams }) {
         >
           <FilterNavMain>
             <Suspense
-              key={JSON.stringify({ ...filters, limit, view })}
+              // Sen `limit`: "Cargar máis" mantén a lista visible en vez de volver ao spinner.
+              key={JSON.stringify({ ...filters, view })}
               fallback={
                 <LoadingState
                   message={view === 'mapa' ? 'Cargando mapa' : 'Cargando datos'}

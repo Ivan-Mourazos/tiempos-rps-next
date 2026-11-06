@@ -74,9 +74,9 @@ export default function JobModal({
         width: 'min(88vw, 1100px)',
         height: 'min(88vh, 820px)',
         background: 'var(--surface-color)',
-        borderRadius: '12px',
+        borderRadius: 'var(--radius-modal, 12px)',
         borderTop: `4px solid ${typeColor}`,
-        boxShadow: '0 24px 64px rgba(0,0,0,0.45)',
+        boxShadow: 'var(--shadow-modal, 0 24px 64px rgba(0,0,0,0.45))',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -92,7 +92,7 @@ export default function JobModal({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', minWidth: 0 }}>
             <strong style={{
               fontSize: '1.1rem', color: badgeTextColor, background: typeColor,
-              padding: '2px 10px', borderRadius: '6px', whiteSpace: 'nowrap',
+              padding: '2px 10px', borderRadius: 'var(--radius-chip, 6px)', whiteSpace: 'nowrap',
               textShadow: badgeTextColor === '#ffffff' ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
             }}>{avisoCompleto}</strong>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
@@ -111,7 +111,7 @@ export default function JobModal({
               fontSize: '0.7rem', fontWeight: '800',
               color: 'var(--solution-fg)', background: 'var(--solution-bg)',
               border: '1px solid var(--solution-border)',
-              padding: '2px 7px', borderRadius: '4px',
+              padding: '2px 7px', borderRadius: 'var(--radius-chip, 4px)',
               textTransform: 'uppercase', letterSpacing: '0.03em', whiteSpace: 'nowrap',
             }}>{solutionVal}</span>
           </div>
@@ -121,7 +121,7 @@ export default function JobModal({
                 onClick={() => setIsPdfModalOpen(true)}
                 style={{
                   background: 'var(--brand-orange)', color: 'rgba(0,0,0,0.85)',
-                  border: '1px solid var(--brand-orange)', borderRadius: '6px',
+                  border: '1px solid var(--brand-orange)', borderRadius: 'var(--radius-btn, 6px)',
                   padding: '0.35rem 0.9rem', fontSize: '0.75rem', fontWeight: '700',
                   display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer',
                   transition: 'opacity 0.2s',
@@ -170,7 +170,7 @@ export default function JobModal({
                 </p>
               )}
               {direccionCompleta && (
-                <div style={{ marginTop: '0.5rem', padding: '0.6rem 0.8rem', background: 'var(--bg-color)', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                <div style={{ marginTop: '0.5rem', padding: '0.6rem 0.8rem', background: 'var(--bg-color)', borderRadius: 'var(--radius-box, 6px)', border: '1px solid var(--border-color)' }}>
                   <p style={{ fontWeight: '600', fontSize: '0.85rem', color: 'var(--text-primary)' }}>{direccionCompleta}</p>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
                     {zipCode && <span>{zipCode} </span>}{localidadCliente || item.localidad}{provincia && <span> ({provincia})</span>}
@@ -186,7 +186,7 @@ export default function JobModal({
 
             {/* Observacións */}
             {item.observaciones && (
-              <div style={{ padding: '0.75rem 1rem', borderLeft: '3px solid var(--accent-obs)', background: 'rgba(59,130,246,0.08)', borderRadius: '0 6px 6px 0' }}>
+              <div style={{ padding: '0.75rem 1rem', border: '1px solid color-mix(in srgb, var(--accent-obs) 35%, transparent)', borderLeft: '3px solid var(--accent-obs)', background: 'rgba(59,130,246,0.08)', borderRadius: '0 var(--radius-box, 6px) var(--radius-box, 6px) 0' }}>
                 <p style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--accent-obs)', fontWeight: '700', marginBottom: '0.4rem', letterSpacing: '0.04em' }}>Observacións importantes</p>
                 <div style={{ fontSize: '0.875rem', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{item.observaciones}</div>
               </div>
@@ -194,7 +194,7 @@ export default function JobModal({
 
             {/* Descrición técnica */}
             {item.texto && (
-              <div style={{ padding: '0.75rem 1rem', background: 'var(--surface-elevated)', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+              <div style={{ padding: '0.75rem 1rem', background: 'var(--surface-elevated)', borderRadius: 'var(--radius-box, 6px)', border: '1px solid var(--border-color)' }}>
                 <p style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: '700', marginBottom: '0.4rem', letterSpacing: '0.04em' }}>Descrición Técnica</p>
                 <div style={{ fontSize: '0.875rem', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{item.texto}</div>
               </div>
@@ -205,12 +205,12 @@ export default function JobModal({
           {hasMedia && (
             <div className="job-modal-media-col" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', overflow: 'hidden' }}>
               {photos.length > 0 && (
-                <div className="job-modal-carousel-wrapper" style={{ flex: 1, minHeight: 0, borderRadius: '8px', border: '1px solid var(--border-color)', overflow: 'hidden', background: 'var(--bg-color)' }}>
+                <div className="job-modal-carousel-wrapper" style={{ flex: 1, minHeight: 0, borderRadius: 'var(--radius-box, 8px)', border: '1px solid var(--border-color)', overflow: 'hidden', background: 'var(--bg-color)' }}>
                   <ImageCarousel images={photos} />
                 </div>
               )}
               {gpsParts && (
-                <div className="job-modal-map-wrapper" style={{ flex: 1, minHeight: 0, borderRadius: '8px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+                <div className="job-modal-map-wrapper" style={{ flex: 1, minHeight: 0, borderRadius: 'var(--radius-box, 8px)', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
                   <iframe
                     width="100%" height="100%"
                     style={{ border: 0, display: 'block' }}

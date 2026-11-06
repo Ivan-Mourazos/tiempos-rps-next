@@ -1,0 +1,476 @@
+/* Estilo HeroUI, igual que CoordinaOT (docs/ESTILO-HEROUI.md en coordina-ot).
+   Activo con data-estilo="hero" en <html> (layout.js). Esta folla entra despois
+   de globals.css e substitúe o seu acabado sen !important: o ámbito
+   html[data-estilo="hero"] gaña ás regras antigas por especificidade/orde.
+   Só cambia a presentación; elementos, textos e comportamento consérvanse.
+   As cores que comunican información (tipo de aviso, tempo, solución) mantéñense. */
+
+html[data-estilo="hero"] {
+  --bg-color: #f4f4f5;
+  --bg-base: #f4f4f5;
+  --surface-color: #fff;
+  --surface-elevated: #fff;
+  --surface-highlight: #fff;
+  --surface-inset: #f4f4f5;
+  --input-bg: #f4f4f5;
+  --text-primary: #18181b;
+  --text-secondary: #52525b;
+  --border-color: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --filter-panel-bg: transparent;
+  --highlight-edge: transparent;
+
+  --hero-relleno: #e9e9ec;
+  --hero-relleno-encima: #dedee3;
+  --hero-relleno-pulsado: #d4d4da;
+  --hero-campo-encima: #e9e9ec;
+  --hero-carril: #e4e4e7;
+  --hero-pildora: #fff;
+  --hero-sombra-panel: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 30px -14px rgba(0, 0, 0, 0.12);
+  --hero-sombra-pildora: 0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --hero-sombra-pop: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 20px 50px -16px rgba(0, 0, 0, 0.28);
+  --hero-anillo: var(--brand-orange);
+
+  --shadow-sm: var(--hero-sombra-panel);
+  --shadow-md: var(--hero-sombra-panel);
+  --shadow-lg: var(--hero-sombra-pop);
+  --radius-md: 12px;
+  --radius-lg: 14px;
+
+  /* Usados nos style inline de JobModal (con valor antigo de reserva). */
+  --radius-modal: 24px;
+  --radius-chip: 999px;
+  --radius-btn: 999px;
+  --radius-box: 14px;
+  --shadow-modal: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 30px 80px -24px rgba(0, 0, 0, 0.45);
+}
+
+/* Carbón, non negro puro (mesmo criterio ca Coordina). */
+html[data-estilo="hero"].dark {
+  --bg-color: #161618;
+  --bg-base: #161618;
+  --surface-color: #202024;
+  --surface-elevated: #202024;
+  --surface-highlight: #29292e;
+  --surface-inset: #1a1a1d;
+  --input-bg: #29292e;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --border-color: #34343a;
+  --border-strong: #3f3f46;
+
+  --hero-relleno: #303036;
+  --hero-relleno-encima: #3a3a41;
+  --hero-relleno-pulsado: #44444c;
+  --hero-campo-encima: #34343a;
+  --hero-carril: #2b2b30;
+  --hero-pildora: #5a5a63;
+  --hero-sombra-panel: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --hero-sombra-pildora: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.12);
+  --hero-sombra-pop: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 20px 50px -16px rgba(0, 0, 0, 0.8);
+  --shadow-modal: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 30px 80px -24px rgba(0, 0, 0, 0.8);
+}
+
+/* ── Fondo e cabeceira: lisos, sen degradados nin gran ── */
+html[data-estilo="hero"] body,
+html[data-estilo="hero"].dark body {
+  background: var(--bg-color);
+  background-image: none;
+}
+html[data-estilo="hero"].dark body::before {
+  content: none;
+}
+
+html[data-estilo="hero"] .header,
+html[data-estilo="hero"].dark .header {
+  background: color-mix(in srgb, var(--bg-color) 88%, transparent);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 0;
+  box-shadow: 0 1px 0 var(--border-color);
+}
+html[data-estilo="hero"].dark .header .header-title-logo {
+  filter: none;
+}
+html[data-estilo="hero"] :is(.header-title-logo, .header-actions) {
+  border-color: var(--border-color);
+}
+
+/* ── Grupos de filtros: tarxetas brancas con campos «flat» grises ── */
+html[data-estilo="hero"] .filter-group {
+  background: var(--surface-color);
+  border: 0;
+  border-radius: 14px;
+  box-shadow: var(--hero-sombra-panel);
+  padding: 0.35rem 0.55rem 0.45rem;
+}
+html[data-estilo="hero"] .filter-group label {
+  letter-spacing: 0.02em;
+}
+
+html[data-estilo="hero"] :is(
+  .header input,
+  .header select,
+  .custom-select-trigger,
+  .date-filter-trigger,
+  .date-filter-trigger-input
+) {
+  background: var(--input-bg);
+  border-color: transparent;
+  border-radius: 10px;
+  box-shadow: none;
+  color: var(--text-primary);
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+html[data-estilo="hero"].dark :is(.header input, .header select, .custom-select-trigger) {
+  background: var(--input-bg);
+  border-color: transparent;
+  box-shadow: none;
+}
+html[data-estilo="hero"] :is(
+  .header input,
+  .header select,
+  .custom-select-trigger,
+  .date-filter-trigger,
+  .date-filter-trigger-input
+):hover {
+  background: var(--hero-campo-encima);
+  border-color: transparent;
+}
+html[data-estilo="hero"] :is(
+  .header input,
+  .header select,
+  .date-filter-trigger-input
+):focus,
+html[data-estilo="hero"].dark :is(.header input, .header select):focus,
+html[data-estilo="hero"] :is(.custom-select-trigger, .date-filter-trigger)[aria-expanded='true'] {
+  outline: none;
+  border-color: transparent;
+  background: var(--input-bg);
+  box-shadow: 0 0 0 2px var(--hero-anillo);
+}
+html[data-estilo="hero"].dark .header input::placeholder {
+  color: var(--text-secondary);
+}
+
+/* ── Menús despregables e calendario ── */
+html[data-estilo="hero"] :is(.custom-select-popover, .date-filter-popover, .dfp-dropdown),
+html[data-estilo="hero"].dark :is(.custom-select-popover, .date-filter-popover, .dfp-dropdown) {
+  background: var(--surface-color);
+  border: 0;
+  border-radius: 14px;
+  box-shadow: var(--hero-sombra-pop);
+}
+html[data-estilo="hero"] :is(.custom-select-option, .dfp-option) {
+  border-radius: 8px;
+}
+html[data-estilo="hero"] :is(.custom-select-option, .dfp-option):hover {
+  background: var(--hero-relleno);
+}
+html[data-estilo="hero"] :is(.date-filter-day, .date-filter-nav-btn) {
+  border-radius: 999px;
+}
+html[data-estilo="hero"] :is(.dfp-picker-btn, .date-filter-clear) {
+  border-radius: 10px;
+}
+
+/* ── Botóns ── */
+html[data-estilo="hero"] .theme-toggle-btn,
+html[data-estilo="hero"].dark .theme-toggle-btn {
+  background: var(--hero-relleno);
+  background-image: none;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  box-shadow: none;
+  transform: none;
+  transition: scale 150ms ease, background-color 120ms ease, color 120ms ease;
+}
+html[data-estilo="hero"] .theme-toggle-btn:hover,
+html[data-estilo="hero"].dark .theme-toggle-btn:hover {
+  background: var(--hero-relleno-encima);
+  border-color: transparent;
+  box-shadow: none;
+  transform: none;
+}
+html[data-estilo="hero"] .mobile-filters-toggle,
+html[data-estilo="hero"].dark .mobile-filters-toggle {
+  background: var(--hero-relleno);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  box-shadow: none;
+}
+html[data-estilo="hero"] .mobile-filters-toggle:hover {
+  background: var(--hero-relleno-encima);
+}
+
+html[data-estilo="hero"] .job-card-btn {
+  border: 0;
+  border-radius: 999px;
+  box-shadow: none;
+  padding-block: 0.35rem;
+  transition: scale 150ms ease, background-color 120ms ease, color 120ms ease, opacity 120ms ease;
+}
+html[data-estilo="hero"] .job-card-btn--ficha {
+  background: var(--hero-relleno);
+  color: var(--text-primary);
+}
+html[data-estilo="hero"] .job-card-btn--ficha:hover {
+  background: var(--hero-relleno-encima);
+  color: var(--text-primary);
+}
+
+html[data-estilo="hero"] .load-more-btn {
+  border-radius: 999px;
+  color: rgba(0, 0, 0, 0.85);
+  box-shadow: none;
+  transition: scale 150ms ease, background-color 120ms ease;
+}
+html[data-estilo="hero"] .load-more-btn:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+
+html[data-estilo="hero"] :is(.empty-state-action, .map-detail-button, .map-external-link, .map-selection-close) {
+  border-radius: 999px;
+}
+
+/* Ao premer: escala .97, sen subir nin afundirse (como Coordina). */
+html[data-estilo="hero"] :is(.theme-toggle-btn, .job-card-btn, .load-more-btn, .view-switcher-btn,
+  .mobile-filters-toggle, .empty-state-action, .map-detail-button):active:not(:disabled) {
+  scale: 0.97;
+}
+
+/* ── Selector Lista/Mapa: pestanas con carril gris e píldora branca ── */
+html[data-estilo="hero"] .view-switcher,
+html[data-estilo="hero"].dark .view-switcher {
+  background: var(--hero-carril);
+  border: 0;
+  border-radius: 999px;
+  box-shadow: none;
+  padding: 4px;
+}
+html[data-estilo="hero"] .view-switcher-btn {
+  border-radius: 999px;
+  color: var(--text-secondary);
+  transition: scale 150ms ease, background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+html[data-estilo="hero"] .view-switcher-btn:hover {
+  color: var(--text-primary);
+}
+html[data-estilo="hero"] .view-switcher-btn.is-active {
+  background: var(--hero-pildora);
+  color: var(--text-primary);
+  box-shadow: var(--hero-sombra-pildora);
+}
+html[data-estilo="hero"] .view-switcher-btn.is-active svg {
+  color: var(--brand-orange);
+}
+
+/* ── Tarxetas de traballo ── */
+html[data-estilo="hero"] .job-card,
+html[data-estilo="hero"].dark .job-card {
+  background: var(--surface-color);
+  border: 0;
+  border-radius: 14px;
+  /* A franxa de tipo vai como sombra interior: segue o radio da tarxeta. */
+  box-shadow: inset 6px 0 0 var(--tipo, transparent), var(--hero-sombra-panel);
+  padding-left: calc(1rem + 6px);
+}
+html[data-estilo="hero"] .job-card:hover,
+html[data-estilo="hero"].dark .job-card:hover {
+  transform: none;
+  box-shadow: inset 6px 0 0 var(--tipo, transparent), 0 1px 2px rgba(0, 0, 0, 0.05), 0 14px 34px -14px rgba(0, 0, 0, 0.2);
+}
+html[data-estilo="hero"].dark .job-card:hover {
+  box-shadow: inset 6px 0 0 var(--tipo, transparent), 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+html[data-estilo="hero"].dark .job-card::before {
+  content: none;
+}
+html[data-estilo="hero"].dark .job-card [data-inset-panel] {
+  background: var(--surface-inset);
+  box-shadow: none;
+  border-color: var(--border-color);
+}
+
+html[data-estilo="hero"] .job-card-aviso {
+  border-radius: 8px;
+}
+/* Textos con fondo de cor: levan bordo da súa cor para destacar (Iván, 06/11/2026). */
+html[data-estilo="hero"] .job-card-solution {
+  border: 1px solid var(--solution-border);
+  border-radius: 999px;
+  padding-inline: 8px;
+}
+html[data-estilo="hero"] .job-card-local-name {
+  border: 1px solid rgba(67, 56, 202, 0.3);
+  border-radius: 999px;
+  padding: 0 7px;
+}
+html[data-estilo="hero"].dark .job-card-local-name {
+  border-color: rgba(129, 140, 248, 0.4);
+}
+html[data-estilo="hero"] .job-card-photos {
+  border-top-style: solid;
+}
+html[data-estilo="hero"] .job-card-thumb {
+  border: 0;
+  border-radius: 12px;
+}
+
+/* ── Mapa ── */
+html[data-estilo="hero"] .monitoring-map-shell,
+html[data-estilo="hero"].dark .monitoring-map-shell {
+  border: 0;
+  border-radius: 14px;
+  box-shadow: var(--hero-sombra-panel);
+}
+html[data-estilo="hero"] .map-selection-card,
+html[data-estilo="hero"].dark .map-selection-card {
+  background: var(--surface-color);
+  border: 0;
+  border-radius: 20px;
+  box-shadow: var(--hero-sombra-pop);
+}
+html[data-estilo="hero"] :is(.map-summary-bar, .map-legend, .map-unmapped-summary),
+html[data-estilo="hero"].dark :is(.map-legend, .map-unmapped-summary) {
+  border-color: transparent;
+  border-radius: 14px;
+}
+
+/* ── Estados ── */
+html[data-estilo="hero"] .empty-state,
+html[data-estilo="hero"].dark .empty-state {
+  background: var(--surface-color);
+  backdrop-filter: none;
+  border: 0;
+  border-radius: 24px;
+  box-shadow: var(--hero-sombra-panel);
+}
+html[data-estilo="hero"] :is(.error-banner, .filter-range-error) {
+  border-radius: 14px;
+}
+html[data-estilo="hero"] .filter-placeholder,
+html[data-estilo="hero"].dark .filter-placeholder {
+  border-radius: 14px;
+}
+
+/* ── Foco visible con teclado ── */
+html[data-estilo="hero"] :is(button, a, summary, [role="button"]):focus-visible {
+  outline: 2px solid var(--hero-anillo);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-estilo="hero"] :is(.theme-toggle-btn, .job-card-btn, .load-more-btn, .view-switcher-btn,
+    .mobile-filters-toggle, .empty-state-action, .map-detail-button) {
+    transition: none;
+  }
+  html[data-estilo="hero"] :is(.theme-toggle-btn, .job-card-btn, .load-more-btn, .view-switcher-btn,
+    .mobile-filters-toggle, .empty-state-action, .map-detail-button):active:not(:disabled) {
+    scale: 1;
+  }
+}
+
+/* ── Menú superior compacto (06/11/2026) ──
+   1) Unha soa barra branca cos grupos separados por liñas finas.
+   2) Etiquetas dentro do campo (como os Input de HeroUI): menos alto.
+   3) Punto laranxa nos campos con filtro aplicado. */
+@media (min-width: 1025px) {
+  html[data-estilo="hero"] .filter-form-fields {
+    gap: 0;
+    padding: 4px;
+    background: var(--surface-color);
+    border-radius: 16px;
+    box-shadow: var(--hero-sombra-panel);
+    flex-wrap: nowrap;
+    align-items: stretch;
+  }
+  html[data-estilo="hero"] .filter-form-fields .filter-group {
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0 6px;
+    gap: 4px;
+    align-items: center;
+    min-width: 0;
+  }
+  html[data-estilo="hero"] .filter-form-fields .filter-group + .filter-group {
+    border-left: 1px solid var(--border-color);
+  }
+  html[data-estilo="hero"] .filter-group-tecnico {
+    width: 220px;
+  }
+  html[data-estilo="hero"] .filter-group-type-priority {
+    flex: 1 1 220px;
+  }
+  html[data-estilo="hero"] .filter-group-search {
+    flex: 2 1 220px;
+  }
+  html[data-estilo="hero"] .hoxe-btn {
+    align-self: center;
+    height: 42px;
+  }
+}
+
+html[data-estilo="hero"] .filter-field {
+  position: relative;
+}
+html[data-estilo="hero"] .filter-field > label {
+  position: absolute;
+  top: 5px;
+  left: 10px;
+  z-index: 1;
+  margin: 0;
+  font-size: 0.58rem;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+html[data-estilo="hero"] .header form .filter-field :is(input, .custom-select-trigger, .date-filter-trigger-input) {
+  height: 42px;
+  padding-top: 15px;
+  padding-bottom: 0;
+}
+/* Punto de filtro activo, xunto á etiqueta. */
+html[data-estilo="hero"] .filter-field[data-activo] > label::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-left: 4px;
+  border-radius: 999px;
+  background: var(--brand-orange);
+  display: inline-block;
+  vertical-align: middle;
+}
+
+html[data-estilo="hero"] .theme-toggle-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+html[data-estilo="hero"] .theme-toggle-btn:disabled:hover {
+  background: var(--hero-relleno);
+}
+
+/* ── Cabeceira compacta sempre (Iván, 06/11/2026: «a cabeceira pequena
+   convénceme para sempre, dá máis espazo aos inputs»). Só escritorio: logo
+   máis pequeno e campos de 36 px; o móbil mantén o seu deseño. */
+@media (min-width: 1025px) {
+  html[data-estilo="hero"] .header {
+    padding-block: 0.3rem;
+  }
+  html[data-estilo="hero"] .header-title-logo img {
+    height: 56px;
+    margin-block: -14px;
+  }
+  html[data-estilo="hero"] .header form .filter-field :is(input, .custom-select-trigger, .date-filter-trigger-input),
+  html[data-estilo="hero"] .hoxe-btn {
+    height: 36px;
+  }
+  html[data-estilo="hero"] .header form .filter-field :is(input, .custom-select-trigger, .date-filter-trigger-input) {
+    padding-top: 13px;
+  }
+  html[data-estilo="hero"] .filter-field > label {
+    top: 3px;
+    font-size: 0.55rem;
+  }
+}

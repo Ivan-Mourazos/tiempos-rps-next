@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
   --brand-orange: #f37021; /* Toldos Gómez Orange */
@@ -122,7 +121,7 @@ html.dark .dashboard-container {
 }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-primary);
   line-height: 1.5;
@@ -167,19 +166,19 @@ html.dark .header .header-title-logo {
 }
 
 .header form {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-  padding: 0 !important;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding: 0;
 }
 
 html.dark .header input,
 html.dark .header select {
-  background-color: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.18) !important;
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.18);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
-  color: var(--text-primary) !important;
+  color: var(--text-primary);
 }
 
 html.dark .header select {
@@ -187,21 +186,21 @@ html.dark .header select {
 }
 
 html.dark .header input::placeholder {
-  color: rgba(255, 255, 255, 0.4) !important;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .header form input,
 .header form select,
 .header form .date-filter-field input,
 .header form button {
-  height: 34px !important;
-  box-sizing: border-box !important;
+  height: 34px;
+  box-sizing: border-box;
 }
 
 
 html.dark .header input:focus,
 html.dark .header select:focus {
-  border-color: rgba(255, 147, 73, 0.5) !important;
+  border-color: rgba(255, 147, 73, 0.5);
   outline: none;
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.35),
@@ -257,14 +256,156 @@ html.dark .theme-toggle-btn:hover {
   grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
 }
 
+/* Lista principal: unha tarxeta por fila (antes en style inline de page.js). */
+.job-list.job-list--stack {
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  padding: 0;
+}
+
 .job-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  position: relative;
+  overflow: hidden;
   background-color: var(--surface-color);
   border: 1px solid var(--border-color);
+  /* Franxa lateral coa cor do tipo de aviso (--tipo vén de JobCard). */
+  border-left: 6px solid var(--tipo, var(--border-color));
   border-radius: var(--radius-lg);
-  padding: 1.5rem;
+  padding: 0.6rem 0.6rem 0.6rem 1rem;
   box-shadow: var(--shadow-md);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   animation: cardFadeIn 0.4s ease-out;
+}
+
+.job-card-aviso {
+  font-size: 0.9rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.job-card-solution {
+  font-size: 0.65rem;
+  color: var(--solution-fg);
+  font-weight: 800;
+  background: var(--solution-bg);
+  border: 1px solid var(--solution-border);
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.job-card-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.65rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s, opacity 0.2s;
+}
+
+.job-card-btn--pedido {
+  background: var(--brand-orange);
+  color: rgba(0, 0, 0, 0.85);
+  border: 1px solid var(--brand-orange);
+}
+
+.job-card-btn--pedido:hover {
+  opacity: 0.9;
+}
+
+.job-card-btn--ficha {
+  background: var(--surface-color);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.job-card-btn--ficha:hover {
+  background: var(--brand-orange);
+  color: #fff;
+  border-color: var(--brand-orange);
+}
+
+.job-card-btn:focus-visible {
+  outline: 2px solid var(--brand-orange);
+  outline-offset: 2px;
+}
+
+.job-card-photos {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding: 0.4rem 0 0.6rem;
+  border-top: 1px dashed var(--border-color);
+  scrollbar-width: thin;
+  scrollbar-color: var(--brand-orange) transparent;
+  -webkit-overflow-scrolling: touch;
+  user-select: none;
+}
+
+.job-card-thumb {
+  flex: 0 0 160px;
+  height: 110px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: #1a1a1a;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: transform 0.2s;
+}
+
+.job-card-thumb:hover {
+  transform: scale(1.03);
+}
+
+.load-more {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 2rem 1rem;
+}
+
+.load-more-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 2rem;
+  background: var(--brand-orange);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.load-more-btn:hover:not(:disabled) {
+  background: var(--brand-orange-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.load-more-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 @keyframes cardFadeIn {
@@ -291,10 +432,10 @@ html.dark .job-card {
     var(--surface-elevated) 28%,
     var(--surface-color) 62%,
     #0e1118 100%
-  ) !important;
-  border-top-color: rgba(255, 255, 255, 0.07) !important;
-  border-right-color: rgba(255, 255, 255, 0.07) !important;
-  border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+  );
+  border-top-color: rgba(255, 255, 255, 0.07);
+  border-right-color: rgba(255, 255, 255, 0.07);
+  border-bottom-color: rgba(255, 255, 255, 0.07);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.09),
     inset 0 -12px 24px -12px rgba(0, 0, 0, 0.35),
@@ -323,9 +464,9 @@ html.dark .job-card::before {
 }
 
 html.dark .job-card:hover {
-  border-top-color: rgba(255, 147, 73, 0.32) !important;
-  border-right-color: rgba(255, 147, 73, 0.32) !important;
-  border-bottom-color: rgba(255, 147, 73, 0.32) !important;
+  border-top-color: rgba(255, 147, 73, 0.32);
+  border-right-color: rgba(255, 147, 73, 0.32);
+  border-bottom-color: rgba(255, 147, 73, 0.32);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
     0 0 0 1px rgba(255, 147, 73, 0.15),
@@ -335,9 +476,9 @@ html.dark .job-card:hover {
 }
 
 html.dark .job-card [data-inset-panel] {
-  background: var(--surface-inset) !important;
+  background: var(--surface-inset);
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
-  border-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.05);
 }
 
 .job-card-main {
@@ -1650,11 +1791,11 @@ html.dark .header-title-logo .logo-dark {
   box-sizing: border-box;
   line-height: 1.4;
   color-scheme: light;
-  background: var(--input-bg) !important;
+  background: var(--input-bg);
 }
 html.dark .custom-select-trigger {
   color-scheme: dark;
-  background: #1a2130 !important;
+  background: #1a2130;
 }
 
 .custom-select-trigger span {
