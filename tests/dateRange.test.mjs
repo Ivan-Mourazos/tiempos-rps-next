@@ -61,3 +61,13 @@ test('axusta correctamente o 29 de febreiro ao ano anterior', () => {
   assert.equal(getPreviousYearISO('2024-02-29'), '2023-02-28');
   assert.equal(getPreviousYearISO('data-non-valida'), '');
 });
+
+test('getListQueryLimit pagina de 100 en 100 con tope', async () => {
+  const { getListQueryLimit, DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT } = await import('../app/lib/dateRange.js');
+  assert.equal(getListQueryLimit(undefined), DEFAULT_LIST_LIMIT);
+  assert.equal(getListQueryLimit('abc'), DEFAULT_LIST_LIMIT);
+  assert.equal(getListQueryLimit('20'), DEFAULT_LIST_LIMIT);
+  // Antes quedaba bloqueado en 500: "Cargar máis" repetía os mesmos resultados.
+  assert.equal(getListQueryLimit('600'), 600);
+  assert.equal(getListQueryLimit('999999'), MAX_LIST_LIMIT);
+});

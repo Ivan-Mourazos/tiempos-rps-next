@@ -1,11 +1,22 @@
 /** A partir de este número de días se muestra aviso de consulta lenta (no bloquea). */
 export const SLOW_QUERY_THRESHOLD_DAYS = 31;
 
-/** Tope de filas al buscar por cliente/teléfono (traer todos los coincidentes). */
-export const SEARCH_RESULT_LIMIT = 10000;
-
-/** Tope de filas en listados normales (sin búsqueda de texto). */
+/** Filas por páxina (listados e buscas): "Cargar máis" engade outras tantas. */
 export const DEFAULT_LIST_LIMIT = 100;
+
+/**
+ * Tope absoluto de filas acumuladas con "Cargar máis". Antes as buscas por
+ * texto traían ata 10.000 filas de golpe (68 MB de HTML, ~22 s); agora paginan
+ * como o resto.
+ */
+export const MAX_LIST_LIMIT = 10000;
+
+/** Límite SQL efectivo a partir do parámetro `limit` da URL. */
+export function getListQueryLimit(limit) {
+  const value = Number.parseInt(String(limit ?? ''), 10);
+  if (!Number.isFinite(value)) return DEFAULT_LIST_LIMIT;
+  return Math.min(Math.max(value, DEFAULT_LIST_LIMIT), MAX_LIST_LIMIT);
+}
 
 /** Zona horaria do panel (Galicia / España peninsular). */
 export const DASHBOARD_TIME_ZONE = 'Europe/Madrid';

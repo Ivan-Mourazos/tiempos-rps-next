@@ -14,12 +14,11 @@ import ScrollToTop from './components/ScrollToTop';
 import ViewSwitcher from './components/ViewSwitcher';
 import MonitoringMap from './components/MonitoringMap';
 import {
-  DEFAULT_LIST_LIMIT,
-  SEARCH_RESULT_LIMIT,
+  MAX_LIST_LIMIT,
   expandDefaultDateRangeForTextSearch,
+  getListQueryLimit,
   getLocalTodayISO,
   getSlowQueryWarningMessage,
-  hasTextSearch,
   isDateRangeInverted,
   isTodayDashboardView,
 } from './lib/dateRange';
@@ -59,13 +58,8 @@ function formatQueryError(error) {
   return 'Non foi posible completar a consulta. Proba de novo ou contacta con soporte.';
 }
 
-/** Límite SQL: búsqueda por texto trae todos os coincidentes (ata SEARCH_RESULT_LIMIT). */
-function getEffectiveQueryLimit(limit, filters) {
-  if (hasTextSearch(filters)) {
-    return SEARCH_RESULT_LIMIT;
-  }
-  return Math.min(Math.max(limit, DEFAULT_LIST_LIMIT), 500);
-}
+/** SQL Server admite como moito 2100 parámetros por consulta. */
+const PHOTO_PARAM_CHUNK = 1000;
 
 const TIPO_LABELS = {
   'PM': 'Instalaciones',
@@ -183,7 +177,7 @@ async function JobBoard({ filters, limit, isTodayView }) {
 
   try {
     const pool = await getDbConnection();
-    const queryLimit = getEffectiveQueryLimit(limit, filters);
+    const queryLimit = getListQueryLimit(limit);
     let query = `SELECT TOP ${queryLimit} ${SQL_COLUMNS}
                  FROM tgm_monitorizacion m WITH (NOLOCK)
                  ${OUTER_APPLY_WARNING_CLIENT}
@@ -227,19 +221,28 @@ async function JobBoard({ filters, limit, isTodayView }) {
         // Construimos parámetros @a0, @a1, ... uno por asistencia.
         // Patrón parametrizado: evita inyección SQL y soporta valores con caracteres especiales
         // (comillas, espacios, etc.) sin romper la query.
-        const photoRequest = pool.request();
-        const placeholders = asistencias.map((value, idx) => {
-          const paramName = `a${idx}`;
-          photoRequest.input(paramName, String(value).trim());
-          return `@${paramName}`;
-        });
+        // Por bloques: con máis de 2100 parámetros SQL Server rexeita a
+        // consulta e as tarxetas quedaban sen fotos.
+        const uniqueAsistencias = [...new Set(asistencias.map((value) => String(value).trim()))];
+        const chunks = [];
+        for (let i = 0; i < uniqueAsistencias.length; i += PHOTO_PARAM_CHUNK) {
+          chunks.push(uniqueAsistencias.slice(i, i + PHOTO_PARAM_CHUNK));
+        }
 
-        const photoResult = await photoRequest.query(
-          `SELECT asistencia, foto FROM TGM_MONITORIZACION_FOTOS WITH (NOLOCK) 
-           WHERE asistencia IN (${placeholders.join(', ')})`
-        );
+        const photoResults = await Promise.all(chunks.map((chunk) => {
+          const photoRequest = pool.request();
+          const placeholders = chunk.map((value, idx) => {
+            const paramName = `a${idx}`;
+            photoRequest.input(paramName, value);
+            return `@${paramName}`;
+          });
+          return photoRequest.query(
+            `SELECT asistencia, foto FROM TGM_MONITORIZACION_FOTOS WITH (NOLOCK)
+             WHERE asistencia IN (${placeholders.join(', ')})`
+          );
+        }));
 
-        const photoRecords = photoResult.recordset || [];
+        const photoRecords = photoResults.flatMap((result) => result.recordset || []);
         
         // Group photos by asistencia
         photoRecords.forEach(row => {
@@ -281,7 +284,7 @@ async function JobBoard({ filters, limit, isTodayView }) {
             return <JobCardWrapper key={key} item={item} index={index} extraPhotos={extraPhotos} />;
           })}
         </ul>
-        {dbData.length >= queryLimit && queryLimit < SEARCH_RESULT_LIMIT && (
+        {dbData.length >= queryLimit && queryLimit < MAX_LIST_LIMIT && (
           <LoadMore currentLimit={queryLimit} />
         )}
       </>
@@ -481,8 +484,7 @@ export default async function Page({ searchParams }) {
   const view = params.vista === 'mapa' ? 'mapa' : 'listado';
   const isTodayView = isTodayDashboardView(params, today);
   const hasDateParams = params.fechaInicio || params.fechaFin;
-  const parsedLimit = Number.parseInt(String(params.limit || ''), 10);
-  const limit = Number.isFinite(parsedLimit) ? parsedLimit : DEFAULT_LIST_LIMIT;
+  const limit = getListQueryLimit(params.limit);
 
   let filters = normalizeMonitorizacionFilters({
     tecnico: params.tecnico || 'TODOS',
