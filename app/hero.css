@@ -443,14 +443,6 @@ html[data-estilo="hero"] .filter-field[data-activo] > label::after {
   vertical-align: middle;
 }
 
-html[data-estilo="hero"] .theme-toggle-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-html[data-estilo="hero"] .theme-toggle-btn:disabled:hover {
-  background: var(--hero-relleno);
-}
-
 /* ── Cabeceira compacta sempre (Iván, 06/11/2026: «a cabeceira pequena
    convénceme para sempre, dá máis espazo aos inputs»). Só escritorio: logo
    máis pequeno e campos de 36 px; o móbil mantén o seu deseño. */
